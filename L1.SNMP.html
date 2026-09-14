@@ -1,0 +1,2907 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.39">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Álvaro Alesanco Iglesias">
+
+<title>Network Management — UNIZAR – Lab 1 — SNMP and Python</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Network Management — UNIZAR</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="./L1.SNMP.html" aria-current="page"> 
+<span class="menu-text">Lab 1: SNMP</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#context" id="toc-context" class="nav-link active" data-scroll-target="#context"><span class="header-section-number">1</span> Context</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives"><span class="header-section-number">2</span> Learning Objectives</a></li>
+  <li><a href="#lab-environment" id="toc-lab-environment" class="nav-link" data-scroll-target="#lab-environment"><span class="header-section-number">3</span> Lab Environment</a></li>
+  <li><a href="#preparing-the-environment" id="toc-preparing-the-environment" class="nav-link" data-scroll-target="#preparing-the-environment"><span class="header-section-number">4</span> Preparing the Environment</a>
+  <ul class="collapse">
+  <li><a href="#accessing-the-debian-container" id="toc-accessing-the-debian-container" class="nav-link" data-scroll-target="#accessing-the-debian-container"><span class="header-section-number">4.1</span> Accessing the Debian Container</a></li>
+  <li><a href="#installing-snmp-command-line-tools" id="toc-installing-snmp-command-line-tools" class="nav-link" data-scroll-target="#installing-snmp-command-line-tools"><span class="header-section-number">4.2</span> Installing SNMP Command-Line Tools</a></li>
+  <li><a href="#creating-a-python-virtual-environment" id="toc-creating-a-python-virtual-environment" class="nav-link" data-scroll-target="#creating-a-python-virtual-environment"><span class="header-section-number">4.3</span> Creating a Python Virtual Environment</a></li>
+  <li><a href="#installing-pysnmp" id="toc-installing-pysnmp" class="nav-link" data-scroll-target="#installing-pysnmp"><span class="header-section-number">4.4</span> Installing PySNMP</a></li>
+  <li><a href="#checking-network-connectivity" id="toc-checking-network-connectivity" class="nav-link" data-scroll-target="#checking-network-connectivity"><span class="header-section-number">4.5</span> Checking Network Connectivity</a></li>
+  </ul></li>
+  <li><a href="#first-contact-with-snmp" id="toc-first-contact-with-snmp" class="nav-link" data-scroll-target="#first-contact-with-snmp"><span class="header-section-number">5</span> First Contact with SNMP</a>
+  <ul class="collapse">
+  <li><a href="#configuring-the-mikrotik-snmp-agent" id="toc-configuring-the-mikrotik-snmp-agent" class="nav-link" data-scroll-target="#configuring-the-mikrotik-snmp-agent"><span class="header-section-number">5.1</span> Configuring the MikroTik SNMP Agent</a></li>
+  <li><a href="#your-first-snmp-get" id="toc-your-first-snmp-get" class="nav-link" data-scroll-target="#your-first-snmp-get"><span class="header-section-number">5.2</span> Your First SNMP GET</a></li>
+  <li><a href="#exploring-the-system-group" id="toc-exploring-the-system-group" class="nav-link" data-scroll-target="#exploring-the-system-group"><span class="header-section-number">5.3</span> Exploring the <code>system</code> Group</a></li>
+  <li><a href="#looking-at-the-protocol" id="toc-looking-at-the-protocol" class="nav-link" data-scroll-target="#looking-at-the-protocol"><span class="header-section-number">5.4</span> Looking at the Protocol</a></li>
+  <li><a href="#performing-the-same-get-with-python" id="toc-performing-the-same-get-with-python" class="nav-link" data-scroll-target="#performing-the-same-get-with-python"><span class="header-section-number">5.5</span> Performing the Same GET with Python</a></li>
+  </ul></li>
+  <li><a href="#get-operations-and-varbinds" id="toc-get-operations-and-varbinds" class="nav-link" data-scroll-target="#get-operations-and-varbinds"><span class="header-section-number">6</span> GET Operations and VarBinds</a>
+  <ul class="collapse">
+  <li><a href="#a-minimal-pysnmp-example" id="toc-a-minimal-pysnmp-example" class="nav-link" data-scroll-target="#a-minimal-pysnmp-example"><span class="header-section-number">6.1</span> A Minimal PySNMP Example</a></li>
+  <li><a href="#retrieving-the-system-objects" id="toc-retrieving-the-system-objects" class="nav-link" data-scroll-target="#retrieving-the-system-objects"><span class="header-section-number">6.2</span> Retrieving the <code>system</code> Objects</a>
+  <ul class="collapse">
+  <li><a href="#experiment-1-one-get-per-object" id="toc-experiment-1-one-get-per-object" class="nav-link" data-scroll-target="#experiment-1-one-get-per-object"><span class="header-section-number">6.2.1</span> Experiment 1 — One GET per object</a></li>
+  <li><a href="#experiment-2-several-varbinds-in-one-get" id="toc-experiment-2-several-varbinds-in-one-get" class="nav-link" data-scroll-target="#experiment-2-several-varbinds-in-one-get"><span class="header-section-number">6.2.2</span> Experiment 2 — Several VarBinds in one GET</a></li>
+  </ul></li>
+  <li><a href="#verifying-the-difference-on-the-network" id="toc-verifying-the-difference-on-the-network" class="nav-link" data-scroll-target="#verifying-the-difference-on-the-network"><span class="header-section-number">6.3</span> Verifying the Difference on the Network</a></li>
+  <li><a href="#what-happens-when-an-object-does-not-exist" id="toc-what-happens-when-an-object-does-not-exist" class="nav-link" data-scroll-target="#what-happens-when-an-object-does-not-exist"><span class="header-section-number">6.4</span> What Happens When an Object Does Not Exist?</a>
+  <ul class="collapse">
+  <li><a href="#snmpv1-vs-snmpv2c" id="toc-snmpv1-vs-snmpv2c" class="nav-link" data-scroll-target="#snmpv1-vs-snmpv2c"><span class="header-section-number">6.4.1</span> SNMPv1 vs SNMPv2c</a></li>
+  </ul></li>
+  <li><a href="#sequential-requests-vs-concurrent-requests" id="toc-sequential-requests-vs-concurrent-requests" class="nav-link" data-scroll-target="#sequential-requests-vs-concurrent-requests"><span class="header-section-number">6.5</span> Sequential Requests vs Concurrent Requests</a></li>
+  </ul></li>
+  <li><a href="#navigating-the-mib-getnext-and-walk" id="toc-navigating-the-mib-getnext-and-walk" class="nav-link" data-scroll-target="#navigating-the-mib-getnext-and-walk"><span class="header-section-number">7</span> Navigating the MIB: GETNEXT and WALK</a>
+  <ul class="collapse">
+  <li><a href="#using-getnext" id="toc-using-getnext" class="nav-link" data-scroll-target="#using-getnext"><span class="header-section-number">7.1</span> Using GETNEXT</a></li>
+  <li><a href="#building-a-walk-from-getnext" id="toc-building-a-walk-from-getnext" class="nav-link" data-scroll-target="#building-a-walk-from-getnext"><span class="header-section-number">7.2</span> Building a WALK from GETNEXT</a>
+  <ul class="collapse">
+  <li><a href="#experiment-implement-your-own-walk" id="toc-experiment-implement-your-own-walk" class="nav-link" data-scroll-target="#experiment-implement-your-own-walk"><span class="header-section-number">7.2.1</span> Experiment — Implement your own walk</a></li>
+  </ul></li>
+  <li><a href="#comparing-with-snmpwalk" id="toc-comparing-with-snmpwalk" class="nav-link" data-scroll-target="#comparing-with-snmpwalk"><span class="header-section-number">7.3</span> Comparing with <code>snmpwalk</code></a></li>
+  </ul></li>
+  <li><a href="#working-with-snmp-tables" id="toc-working-with-snmp-tables" class="nav-link" data-scroll-target="#working-with-snmp-tables"><span class="header-section-number">8</span> Working with SNMP Tables</a>
+  <ul class="collapse">
+  <li><a href="#the-interface-table" id="toc-the-interface-table" class="nav-link" data-scroll-target="#the-interface-table"><span class="header-section-number">8.1</span> The Interface Table</a></li>
+  <li><a href="#building-an-interface-inventory" id="toc-building-an-interface-inventory" class="nav-link" data-scroll-target="#building-an-interface-inventory"><span class="header-section-number">8.2</span> Building an Interface Inventory</a></li>
+  <li><a href="#from-inventory-to-telemetry" id="toc-from-inventory-to-telemetry" class="nav-link" data-scroll-target="#from-inventory-to-telemetry"><span class="header-section-number">8.3</span> From Inventory to Telemetry</a></li>
+  </ul></li>
+  <li><a href="#from-counters-to-telemetry" id="toc-from-counters-to-telemetry" class="nav-link" data-scroll-target="#from-counters-to-telemetry"><span class="header-section-number">9</span> From Counters to Telemetry</a>
+  <ul class="collapse">
+  <li><a href="#from-a-counter-to-a-rate" id="toc-from-a-counter-to-a-rate" class="nav-link" data-scroll-target="#from-a-counter-to-a-rate"><span class="header-section-number">9.1</span> From a Counter to a Rate</a></li>
+  <li><a href="#measuring-the-traffic-rate-of-an-interface" id="toc-measuring-the-traffic-rate-of-an-interface" class="nav-link" data-scroll-target="#measuring-the-traffic-rate-of-an-interface"><span class="header-section-number">9.2</span> Measuring the Traffic Rate of an Interface</a></li>
+  <li><a href="#sampling-interval" id="toc-sampling-interval" class="nav-link" data-scroll-target="#sampling-interval"><span class="header-section-number">9.3</span> Sampling Interval</a></li>
+  <li><a href="#continuous-monitoring" id="toc-continuous-monitoring" class="nav-link" data-scroll-target="#continuous-monitoring"><span class="header-section-number">9.4</span> Continuous Monitoring</a></li>
+  <li><a href="#counter-size-matters" id="toc-counter-size-matters" class="nav-link" data-scroll-target="#counter-size-matters"><span class="header-section-number">9.5</span> Counter Size Matters</a></li>
+  <li><a href="#using-high-capacity-counters" id="toc-using-high-capacity-counters" class="nav-link" data-scroll-target="#using-high-capacity-counters"><span class="header-section-number">9.6</span> Using High-Capacity Counters</a></li>
+  <li><a href="#interface-utilization" id="toc-interface-utilization" class="nav-link" data-scroll-target="#interface-utilization"><span class="header-section-number">9.7</span> Interface Utilization</a></li>
+  </ul></li>
+  <li><a href="#monitoring-more-than-one-interface" id="toc-monitoring-more-than-one-interface" class="nav-link" data-scroll-target="#monitoring-more-than-one-interface"><span class="header-section-number">10</span> Monitoring More Than One Interface</a>
+  <ul class="collapse">
+  <li><a href="#concurrent-polling-with-asyncio" id="toc-concurrent-polling-with-asyncio" class="nav-link" data-scroll-target="#concurrent-polling-with-asyncio"><span class="header-section-number">10.1</span> Concurrent Polling with <code>asyncio</code></a></li>
+  <li><a href="#final-monitor" id="toc-final-monitor" class="nav-link" data-scroll-target="#final-monitor"><span class="header-section-number">10.2</span> Final Monitor</a></li>
+  </ul></li>
+  <li><a href="#automatic-device-discovery" id="toc-automatic-device-discovery" class="nav-link" data-scroll-target="#automatic-device-discovery"><span class="header-section-number">11</span> Automatic Device Discovery</a>
+  <ul class="collapse">
+  <li><a href="#discovering-hosts-on-a-local-network" id="toc-discovering-hosts-on-a-local-network" class="nav-link" data-scroll-target="#discovering-hosts-on-a-local-network"><span class="header-section-number">11.1</span> Discovering Hosts on a Local Network</a></li>
+  <li><a href="#arp-discovery-with-scapy" id="toc-arp-discovery-with-scapy" class="nav-link" data-scroll-target="#arp-discovery-with-scapy"><span class="header-section-number">11.2</span> ARP Discovery with Scapy</a>
+  <ul class="collapse">
+  <li><a href="#building-packets-with-scapy" id="toc-building-packets-with-scapy" class="nav-link" data-scroll-target="#building-packets-with-scapy"><span class="header-section-number">11.2.1</span> Building Packets with Scapy</a></li>
+  <li><a href="#ethernet-and-arp" id="toc-ethernet-and-arp" class="nav-link" data-scroll-target="#ethernet-and-arp"><span class="header-section-number">11.2.2</span> Ethernet and ARP</a></li>
+  <li><a href="#sending-and-receiving-packets" id="toc-sending-and-receiving-packets" class="nav-link" data-scroll-target="#sending-and-receiving-packets"><span class="header-section-number">11.2.3</span> Sending and Receiving Packets</a></li>
+  <li><a href="#discovering-a-complete-subnet" id="toc-discovering-a-complete-subnet" class="nav-link" data-scroll-target="#discovering-a-complete-subnet"><span class="header-section-number">11.2.4</span> Discovering a Complete Subnet</a></li>
+  <li><a href="#exercise-build-the-host-inventory" id="toc-exercise-build-the-host-inventory" class="nav-link" data-scroll-target="#exercise-build-the-host-inventory"><span class="header-section-number">11.2.5</span> Exercise — Build the Host Inventory</a></li>
+  </ul></li>
+  <li><a href="#arp-is-not-the-only-discovery-mechanism" id="toc-arp-is-not-the-only-discovery-mechanism" class="nav-link" data-scroll-target="#arp-is-not-the-only-discovery-mechanism"><span class="header-section-number">11.3</span> ARP Is Not the Only Discovery Mechanism</a></li>
+  <li><a href="#from-a-host-to-a-managed-device" id="toc-from-a-host-to-a-managed-device" class="nav-link" data-scroll-target="#from-a-host-to-a-managed-device"><span class="header-section-number">11.4</span> From a Host to a Managed Device</a></li>
+  <li><a href="#identifying-snmp-devices" id="toc-identifying-snmp-devices" class="nav-link" data-scroll-target="#identifying-snmp-devices"><span class="header-section-number">11.5</span> Identifying SNMP Devices</a></li>
+  <li><a href="#enterprise-oids" id="toc-enterprise-oids" class="nav-link" data-scroll-target="#enterprise-oids"><span class="header-section-number">11.6</span> Enterprise OIDs</a></li>
+  <li><a href="#why-sequential-discovery-does-not-scale" id="toc-why-sequential-discovery-does-not-scale" class="nav-link" data-scroll-target="#why-sequential-discovery-does-not-scale"><span class="header-section-number">11.7</span> Why Sequential Discovery Does Not Scale</a></li>
+  <li><a href="#concurrent-snmp-discovery" id="toc-concurrent-snmp-discovery" class="nav-link" data-scroll-target="#concurrent-snmp-discovery"><span class="header-section-number">11.8</span> Concurrent SNMP Discovery</a></li>
+  <li><a href="#building-the-device-inventory" id="toc-building-the-device-inventory" class="nav-link" data-scroll-target="#building-the-device-inventory"><span class="header-section-number">11.9</span> Building the Device Inventory</a></li>
+  </ul></li>
+  <li><a href="#modifying-managed-objects-snmp-set" id="toc-modifying-managed-objects-snmp-set" class="nav-link" data-scroll-target="#modifying-managed-objects-snmp-set"><span class="header-section-number">12</span> Modifying Managed Objects: SNMP SET</a>
+  <ul class="collapse">
+  <li><a href="#read-and-write-access" id="toc-read-and-write-access" class="nav-link" data-scroll-target="#read-and-write-access"><span class="header-section-number">12.1</span> Read and Write Access</a></li>
+  <li><a href="#enabling-write-access" id="toc-enabling-write-access" class="nav-link" data-scroll-target="#enabling-write-access"><span class="header-section-number">12.2</span> Enabling Write Access</a></li>
+  <li><a href="#performing-a-set-with-pysnmp" id="toc-performing-a-set-with-pysnmp" class="nav-link" data-scroll-target="#performing-a-set-with-pysnmp"><span class="header-section-number">12.3</span> Performing a SET with PySNMP</a></li>
+  <li><a href="#inspecting-an-snmp-set" id="toc-inspecting-an-snmp-set" class="nav-link" data-scroll-target="#inspecting-an-snmp-set"><span class="header-section-number">12.4</span> Inspecting an SNMP SET</a></li>
+  <li><a href="#monitoring-vs-configuration" id="toc-monitoring-vs-configuration" class="nav-link" data-scroll-target="#monitoring-vs-configuration"><span class="header-section-number">12.5</span> Monitoring vs Configuration</a></li>
+  </ul></li>
+  <li><a href="#securing-snmp-snmpv3" id="toc-securing-snmp-snmpv3" class="nav-link" data-scroll-target="#securing-snmp-snmpv3"><span class="header-section-number">13</span> Securing SNMP: SNMPv3</a>
+  <ul class="collapse">
+  <li><a href="#the-problem-with-community-based-snmp" id="toc-the-problem-with-community-based-snmp" class="nav-link" data-scroll-target="#the-problem-with-community-based-snmp"><span class="header-section-number">13.1</span> The Problem with Community-Based SNMP</a></li>
+  </ul></li>
+  <li><a href="#snmpv3-security-model" id="toc-snmpv3-security-model" class="nav-link" data-scroll-target="#snmpv3-security-model"><span class="header-section-number">14</span> SNMPv3 Security Model</a>
+  <ul class="collapse">
+  <li><a href="#configuring-an-snmpv3-user" id="toc-configuring-an-snmpv3-user" class="nav-link" data-scroll-target="#configuring-an-snmpv3-user"><span class="header-section-number">14.1</span> Configuring an SNMPv3 User</a></li>
+  <li><a href="#your-first-snmpv3-get" id="toc-your-first-snmpv3-get" class="nav-link" data-scroll-target="#your-first-snmpv3-get"><span class="header-section-number">14.2</span> Your First SNMPv3 GET</a></li>
+  <li><a href="#inspecting-snmpv3-on-the-network" id="toc-inspecting-snmpv3-on-the-network" class="nav-link" data-scroll-target="#inspecting-snmpv3-on-the-network"><span class="header-section-number">14.3</span> Inspecting SNMPv3 on the Network</a></li>
+  <li><a href="#snmpv3-with-pysnmp" id="toc-snmpv3-with-pysnmp" class="nav-link" data-scroll-target="#snmpv3-with-pysnmp"><span class="header-section-number">14.4</span> SNMPv3 with PySNMP</a></li>
+  </ul></li>
+  <li><a href="#comparing-snmpv2c-and-snmpv3" id="toc-comparing-snmpv2c-and-snmpv3" class="nav-link" data-scroll-target="#comparing-snmpv2c-and-snmpv3"><span class="header-section-number">15</span> Comparing SNMPv2c and SNMPv3</a></li>
+  <li><a href="#what-have-we-built" id="toc-what-have-we-built" class="nav-link" data-scroll-target="#what-have-we-built"><span class="header-section-number">16</span> What Have We Built?</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="L1.SNMP.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Lab 1 — SNMP and Python</h1>
+<p class="subtitle lead">Network Discovery, Device Inspection, and Monitoring</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Álvaro Alesanco Iglesias </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="context" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Context</h1>
+<p>SNMP (Simple Network Management Protocol) remains one of the most widely used mechanisms for retrieving status and operational information from network devices.</p>
+<p>In this lab, we will use a MikroTik router as the managed device and Python to develop simple network management and monitoring tools.</p>
+<p>The lab follows a progression similar to that used by real network management platforms:</p>
+<ol type="1">
+<li><strong>Discover</strong> which devices are present in the network.</li>
+<li><strong>Identify</strong> which devices can be managed using SNMP.</li>
+<li><strong>Inspect</strong> the information exposed by those devices.</li>
+<li><strong>Explore</strong> their interfaces and other objects available through their MIBs.</li>
+<li><strong>Monitor</strong> how selected network parameters evolve over time.</li>
+</ol>
+<p>Throughout the lab, you will work directly from a Linux system and use both command-line tools and Python scripts.</p>
+</section>
+<section id="learning-objectives" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Learning Objectives</h1>
+<p>After completing this lab, you should be able to:</p>
+<ul>
+<li>prepare a Python environment on Linux for developing simple network management tools;</li>
+<li>understand the relationship between <strong>OIDs</strong>, <strong>MIBs</strong>, scalar objects, and tables;</li>
+<li>perform SNMP queries using <code>GET</code>, <code>GETNEXT</code>, and <code>WALK</code>;</li>
+<li>interpret SNMP responses and the <code>VarBind</code> structures exchanged between manager and agent;</li>
+<li>modify managed objects using <code>SET</code> when permitted by the agent;</li>
+<li>automatically discover devices on a network and determine which of them provide SNMP management;</li>
+<li>retrieve and interpret the interface table of a network device;</li>
+<li>use SNMP counters to calculate traffic rates;</li>
+<li>develop a simple interface monitor using Python;</li>
+<li>understand the fundamental differences between SNMPv1, SNMPv2c, and SNMPv3.</li>
+</ul>
+</section>
+<section id="lab-environment" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Lab Environment</h1>
+<p>Each student has an individual laboratory environment accessible through the CyberRange.</p>
+<p>The lab will mainly use two systems:</p>
+<ul>
+<li>a <strong>Debian container</strong>, from which command-line tools and Python scripts will be executed;</li>
+<li>a <strong>MikroTik router</strong>, which will act as the SNMP agent and the network device being monitored.</li>
+</ul>
+<p>The basic architecture is:</p>
+<pre class="text"><code>┌──────────────────────┐
+│      Debian CT       │
+│                      │
+│  Python / pysnmp     │
+│  snmpget / snmpwalk  │
+│  tcpdump             │
+└──────────┬───────────┘
+           │
+           │ SNMP
+           ▼
+┌──────────────────────┐
+│      MikroTik        │
+│                      │
+│     SNMP Agent       │
+│       MIB-II         │
+└──────────────────────┘</code></pre>
+</section>
+<section id="preparing-the-environment" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Preparing the Environment</h1>
+<p>In previous labs, the programming environment and the required Python libraries may have been provided preconfigured. In this course, you will prepare your own working environment.</p>
+<p>This is a common task when deploying network management and observability tools: before collecting telemetry, you need a system from which to run them.</p>
+<section id="accessing-the-debian-container" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="accessing-the-debian-container"><span class="header-section-number">4.1</span> Accessing the Debian Container</h2>
+<p>Connect to your <strong>Debian container (d13-basic-153)</strong> through the CyberRange and open a terminal.</p>
+<p>Check the operating system and the installed Python version:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> /etc/os-release</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">--version</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Throughout this lab, the Debian container will act as the <strong>SNMP manager</strong>, while the MikroTik router will act as the <strong>SNMP agent</strong>.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Manager and agent
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>An <strong>SNMP manager</strong> sends requests to managed devices and processes their responses.</p>
+<p>An <strong>SNMP agent</strong> runs on the managed device and provides access to the management information exposed by that device.</p>
+</div>
+</div>
+</section>
+<section id="installing-snmp-command-line-tools" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="installing-snmp-command-line-tools"><span class="header-section-number">4.2</span> Installing SNMP Command-Line Tools</h2>
+<p>Before writing Python programs, we will verify SNMP communication using standard Linux command-line tools.</p>
+<p>Update the package information and install the SNMP utilities:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install snmp</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Check that the tools are available:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpget</span> <span class="at">--version</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Some of the commands that we will use during this lab are:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Command</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>snmpget</code></td>
+<td>Retrieve one or more specific objects</td>
+</tr>
+<tr class="even">
+<td><code>snmpgetnext</code></td>
+<td>Retrieve the next object in the MIB tree</td>
+</tr>
+<tr class="odd">
+<td><code>snmpwalk</code></td>
+<td>Traverse a subtree of the MIB</td>
+</tr>
+<tr class="even">
+<td><code>snmpset</code></td>
+<td>Modify a writable object</td>
+</tr>
+</tbody>
+</table>
+<p>Do not worry about their complete syntax yet. We will introduce each command when it is needed.</p>
+</section>
+<section id="creating-a-python-virtual-environment" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="creating-a-python-virtual-environment"><span class="header-section-number">4.3</span> Creating a Python Virtual Environment</h2>
+<p>Python projects commonly use <strong>virtual environments</strong> to keep their dependencies isolated from the operating system and from other projects.</p>
+<p>Install the required package if it is not already available:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install python3-venv</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Create a directory for the lab:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> ~/p1-snmp</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/p1-snmp</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Create a virtual environment:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> venv .venv</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Activate it:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> .venv/bin/activate</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Your shell prompt should now indicate that the virtual environment is active.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Whenever you start a new terminal and return to this lab, activate the environment again:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/p1-snmp</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> .venv/bin/activate</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+</section>
+<section id="installing-pysnmp" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="installing-pysnmp"><span class="header-section-number">4.4</span> Installing PySNMP</h2>
+<p>With the virtual environment activated, install PySNMP:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install pysnmp</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Verify the installation:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-c</span> <span class="st">"import pysnmp; print(pysnmp.__version__)"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Create a file named <code>test.py</code>:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pysnmp</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"PySNMP version:"</span>, pysnmp.__version__)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Run it:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> test.py</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If the version is displayed without errors, your Python environment is ready.</p>
+</section>
+<section id="checking-network-connectivity" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="checking-network-connectivity"><span class="header-section-number">4.5</span> Checking Network Connectivity</h2>
+<p>Before using SNMP, verify that the MikroTik router is reachable from your Debian container.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ping</span> <span class="at">-c</span> 3 <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Replace <code>&lt;MIKROTIK_IP&gt;</code> with the IP address assigned to the MikroTik router in your laboratory environment.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Being able to reach a device using ICMP does <strong>not</strong> imply that the device supports SNMP. Similarly, a device that does not reply to ICMP Echo Requests could still provide other network services.</p>
+<p>We will revisit this distinction when implementing automatic device discovery.</p>
+</div>
+</div>
+<p>At this point, your environment should contain:</p>
+<pre class="text"><code>Debian CT
+│
+├── Linux SNMP tools
+│   ├── snmpget
+│   ├── snmpgetnext
+│   ├── snmpwalk
+│   └── snmpset
+│
+└── ~/p1-snmp/
+    ├── .venv/
+    └── test.py</code></pre>
+<p>You are now ready to communicate with the MikroTik SNMP agent.</p>
+</section>
+</section>
+<section id="first-contact-with-snmp" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> First Contact with SNMP</h1>
+<p>We now have the tools required to act as an SNMP manager. The next step is to configure the MikroTik router as an SNMP agent and perform our first query.</p>
+<section id="configuring-the-mikrotik-snmp-agent" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="configuring-the-mikrotik-snmp-agent"><span class="header-section-number">5.1</span> Configuring the MikroTik SNMP Agent</h2>
+<p>Connect to your MikroTik router and verify the SNMP configuration.</p>
+<p>Enable the SNMP agent if necessary and configure the following community:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>SNMP version</td>
+<td>SNMPv2c</td>
+</tr>
+<tr class="even">
+<td>Community</td>
+<td><code>public</code></td>
+</tr>
+<tr class="odd">
+<td>Access</td>
+<td>Read-only</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>SNMPv1 and SNMPv2c communities are transmitted without encryption and should not be considered secure authentication mechanisms.</p>
+<p>We use SNMPv2c here because it allows us to focus first on the SNMP data model and protocol operations. SNMPv3 will be introduced later in the lab.</p>
+</div>
+</div>
+</section>
+<section id="your-first-snmp-get" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="your-first-snmp-get"><span class="header-section-number">5.2</span> Your First SNMP GET</h2>
+<p>Let’s retrieve <code>sysDescr.0</code> from the MikroTik.</p>
+<p><code>sysDescr</code> belongs to the <code>system</code> group of MIB-II and contains a textual description of the managed device.</p>
+<p>Its numeric OID is:</p>
+<pre class="text"><code>1.3.6.1.2.1.1.1.0</code></pre>
+<p>From the Debian container, execute:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpget</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> 1.3.6.1.2.1.1.1.0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>You should obtain a response similar to:</p>
+<pre class="text"><code>iso.3.6.1.2.1.1.1.0 = STRING: ...</code></pre>
+<p>The exact value depends on your MikroTik router.</p>
+<p>Notice that the result contains three different pieces of information:</p>
+<pre class="text"><code>1.3.6.1.2.1.1.1.0  =  STRING  :  value
+        │                  │         │
+        │                  │         └── Object value
+        │                  │
+        │                  └──────────── ASN.1 data type
+        │
+        └─────────────────────────────── Object identifier</code></pre>
+<p>This <code>(OID, value)</code> association is the basic information carried by an SNMP <strong>VarBind</strong>.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Why does the OID end in <code>.0</code>?
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>sysDescr</code> is a scalar object.</p>
+<p>SNMP identifies an <strong>instance</strong> of a scalar object by appending <code>.0</code> to the object OID. Therefore, a GET request must use the complete instance OID:</p>
+<pre class="text"><code>sysDescr.0</code></pre>
+<p>Later, when working with tables, the suffix will have a different meaning: it will identify a particular row of the table.</p>
+</div>
+</div>
+</section>
+<section id="exploring-the-system-group" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="exploring-the-system-group"><span class="header-section-number">5.3</span> Exploring the <code>system</code> Group</h2>
+<p>The <code>system</code> group is located below:</p>
+<pre class="text"><code>1.3.6.1.2.1.1</code></pre>
+<p>Use <code>snmpwalk</code> to retrieve the objects available below this OID:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpwalk</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> 1.3.6.1.2.1.1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Identify at least the following objects in the output:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Object</th>
+<th>Information</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>sysDescr</code></td>
+<td>Device description</td>
+</tr>
+<tr class="even">
+<td><code>sysObjectID</code></td>
+<td>Type of managed device</td>
+</tr>
+<tr class="odd">
+<td><code>sysUpTime</code></td>
+<td>Time since the management system was initialized</td>
+</tr>
+<tr class="even">
+<td><code>sysContact</code></td>
+<td>Contact information</td>
+</tr>
+<tr class="odd">
+<td><code>sysName</code></td>
+<td>Device name</td>
+</tr>
+<tr class="even">
+<td><code>sysLocation</code></td>
+<td>Physical/location information</td>
+</tr>
+<tr class="odd">
+<td><code>sysServices</code></td>
+<td>Services provided by the device</td>
+</tr>
+</tbody>
+</table>
+<div class="callout-question">
+<p>Compare <code>sysDescr</code> and <code>sysObjectID</code>.</p>
+<p>What type of information does each object provide? Why could <code>sysObjectID</code> be particularly useful for an automatic network management system?</p>
+</div>
+</section>
+<section id="looking-at-the-protocol" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="looking-at-the-protocol"><span class="header-section-number">5.4</span> Looking at the Protocol</h2>
+<p>So far, the <code>snmpget</code> command has hidden the actual SNMP message exchange.</p>
+<p>Capture the traffic generated by a single GET operation using the packet capture mechanism provided in the laboratory environment.</p>
+<p>Start the capture and execute again:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpget</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> 1.3.6.1.2.1.1.1.0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Stop the capture after receiving the response and inspect the SNMP packets.</p>
+<p>You should find two messages:</p>
+<pre class="text"><code>Debian CT                              MikroTik
+(manager)                              (agent)
+
+    │                                     │
+    │ ----------- GET request ----------&gt; │
+    │                                     │
+    │ &lt;---------- RESPONSE -------------- │
+    │                                     │</code></pre>
+<p>Inspect the GET request and answer the following questions:</p>
+<ol type="1">
+<li>Which SNMP version is being used?</li>
+<li>Can you find the community string in the packet?</li>
+<li>Which OID appears in the VarBind?</li>
+<li>What value is included in the VarBind of the GET request?</li>
+<li>Find the corresponding VarBind in the response. What has changed?</li>
+</ol>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Do not capture and analyse dozens of packets. The objective is to understand <strong>one request and its corresponding response</strong>.</p>
+<p>You should be able to relate what you see in the packet capture to the SNMP manager/agent model studied in class.</p>
+</div>
+</div>
+</section>
+<section id="performing-the-same-get-with-python" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="performing-the-same-get-with-python"><span class="header-section-number">5.5</span> Performing the Same GET with Python</h2>
+<p>The command-line tools are useful for testing and troubleshooting, but our goal is to build network management software.</p>
+<p>Create a file named:</p>
+<pre class="text"><code>get_system.py</code></pre>
+<p>Using PySNMP, retrieve <code>sysDescr.0</code> from your MikroTik router.</p>
+<p>Your program should display:</p>
+<pre class="text"><code>OID:   ...
+Type:  ...
+Value: ...</code></pre>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>At this point, focus on understanding the PySNMP operation rather than building a generic SNMP application.</p>
+<p>Identify in your program:</p>
+<ul>
+<li>the SNMP version;</li>
+<li>the community;</li>
+<li>the address of the agent;</li>
+<li>the requested OID;</li>
+<li>the returned VarBind.</li>
+</ul>
+</div>
+</div>
+<p>Once the program works, compare its result with the one obtained using <code>snmpget</code>.</p>
+<p>Both tools are acting as SNMP managers and should retrieve the same managed object from the same agent.</p>
+</section>
+</section>
+<section id="get-operations-and-varbinds" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> GET Operations and VarBinds</h1>
+<p>In the previous section, you retrieved a single managed object using an SNMP GET operation.</p>
+<p>An SNMP GET request, however, can contain <strong>more than one VarBind</strong>. This allows a manager to request several objects using a single SNMP message.</p>
+<p>In this section, we will compare both approaches and examine how SNMP handles errors.</p>
+<section id="a-minimal-pysnmp-example" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="a-minimal-pysnmp-example"><span class="header-section-number">6.1</span> A Minimal PySNMP Example</h2>
+<p>PySNMP provides an asynchronous API based on Python’s <code>asyncio</code>.</p>
+<p>The following example retrieves <code>sysUpTime.0</code> from an SNMP agent:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncio</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pysnmp.hlapi.v3arch.asyncio <span class="im">import</span> (</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    SnmpEngine,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    CommunityData,</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    UdpTransportTarget,</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>    ContextData,</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    ObjectType,</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    ObjectIdentity,</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    get_cmd,</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> main():</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>    target <span class="op">=</span> <span class="cf">await</span> UdpTransportTarget.create(</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>        (<span class="st">"&lt;MIKROTIK_IP&gt;"</span>, <span class="dv">161</span>)</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    error_indication, error_status, error_index, var_binds <span class="op">=</span> <span class="cf">await</span> get_cmd(</span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>        SnmpEngine(),</span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>        CommunityData(<span class="st">"public"</span>, mpModel<span class="op">=</span><span class="dv">1</span>),</span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a>        target,</span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>        ContextData(),</span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>        ObjectType(ObjectIdentity(<span class="st">"1.3.6.1.2.1.1.3.0"</span>)),</span>
+<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> error_indication:</span>
+<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(error_indication)</span>
+<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> error_status:</span>
+<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(</span>
+<span id="cb27-31"><a href="#cb27-31" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"</span><span class="sc">{</span>error_status<span class="sc">.</span>prettyPrint()<span class="sc">}</span><span class="ss"> at "</span></span>
+<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"</span><span class="sc">{</span>error_index <span class="kw">and</span> var_binds[<span class="bu">int</span>(error_index) <span class="op">-</span> <span class="dv">1</span>][<span class="dv">0</span>] <span class="kw">or</span> <span class="st">'?'</span><span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> oid, value <span class="kw">in</span> var_binds:</span>
+<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="st">"OID:  "</span>, oid.prettyPrint())</span>
+<span id="cb27-37"><a href="#cb27-37" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="st">"Type: "</span>, <span class="bu">type</span>(value).<span class="va">__name__</span>)</span>
+<span id="cb27-38"><a href="#cb27-38" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="st">"Value:"</span>, value.prettyPrint())</span>
+<span id="cb27-39"><a href="#cb27-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-40"><a href="#cb27-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-41"><a href="#cb27-41" aria-hidden="true" tabindex="-1"></a>asyncio.run(main())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Replace <code>&lt;MIKROTIK_IP&gt;</code> with the address of your MikroTik router and execute the program.</p>
+<div class="callout-question">
+<p>Before continuing, identify in the program:</p>
+<ul>
+<li>where the SNMP agent is specified;</li>
+<li>where the UDP port is specified;</li>
+<li>where the community is specified;</li>
+<li>where SNMPv2c is selected;</li>
+<li>where the requested OID is specified;</li>
+<li>where the program waits for the SNMP response;</li>
+<li>which variable contains the returned VarBinds.</li>
+</ul>
+<p>Why is <code>await</code> appropriate for an operation such as an SNMP request?</p>
+</div>
+</section>
+<section id="retrieving-the-system-objects" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="retrieving-the-system-objects"><span class="header-section-number">6.2</span> Retrieving the <code>system</code> Objects</h2>
+<p>Create a new program named:</p>
+<pre class="text"><code>get_system.py</code></pre>
+<p>The program will retrieve the following objects:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Object</th>
+<th>OID</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>sysDescr.0</code></td>
+<td><code>1.3.6.1.2.1.1.1.0</code></td>
+</tr>
+<tr class="even">
+<td><code>sysObjectID.0</code></td>
+<td><code>1.3.6.1.2.1.1.2.0</code></td>
+</tr>
+<tr class="odd">
+<td><code>sysUpTime.0</code></td>
+<td><code>1.3.6.1.2.1.1.3.0</code></td>
+</tr>
+<tr class="even">
+<td><code>sysContact.0</code></td>
+<td><code>1.3.6.1.2.1.1.4.0</code></td>
+</tr>
+<tr class="odd">
+<td><code>sysName.0</code></td>
+<td><code>1.3.6.1.2.1.1.5.0</code></td>
+</tr>
+<tr class="even">
+<td><code>sysLocation.0</code></td>
+<td><code>1.3.6.1.2.1.1.6.0</code></td>
+</tr>
+<tr class="odd">
+<td><code>sysServices.0</code></td>
+<td><code>1.3.6.1.2.1.1.7.0</code></td>
+</tr>
+</tbody>
+</table>
+<section id="experiment-1-one-get-per-object" class="level3" data-number="6.2.1">
+<h3 data-number="6.2.1" class="anchored" data-anchor-id="experiment-1-one-get-per-object"><span class="header-section-number">6.2.1</span> Experiment 1 — One GET per object</h3>
+<p>Retrieve the seven objects using <strong>seven separate SNMP GET operations</strong>.</p>
+<p>For each returned object, display:</p>
+<pre class="text"><code>OID | data type | value</code></pre>
+<p>Measure the total time required to retrieve all seven objects.</p>
+<p>Python’s <code>time.perf_counter()</code> can be used to measure elapsed time:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>start <span class="op">=</span> time.perf_counter()</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Operations to be measured</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>elapsed <span class="op">=</span> time.perf_counter() <span class="op">-</span> start</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Elapsed time: </span><span class="sc">{</span>elapsed<span class="sc">:.4f}</span><span class="ss"> s"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The seven requests must be performed <strong>sequentially</strong> in this experiment.</p>
+<p>Do not use <code>asyncio.gather()</code> yet.</p>
+</div>
+</div>
+</section>
+<section id="experiment-2-several-varbinds-in-one-get" class="level3" data-number="6.2.2">
+<h3 data-number="6.2.2" class="anchored" data-anchor-id="experiment-2-several-varbinds-in-one-get"><span class="header-section-number">6.2.2</span> Experiment 2 — Several VarBinds in one GET</h3>
+<p>Modify the program so that all seven objects are requested using <strong>a single SNMP GET operation</strong>.</p>
+<p>A GET operation can contain several <code>ObjectType</code> arguments:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> get_cmd(</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ...</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    ObjectType(ObjectIdentity(<span class="st">"OID_1"</span>)),</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    ObjectType(ObjectIdentity(<span class="st">"OID_2"</span>)),</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    ObjectType(ObjectIdentity(<span class="st">"OID_3"</span>)),</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Display the returned objects and measure the total execution time again.</p>
+<p>Compare the result with Experiment 1.</p>
+<div class="callout-question">
+<p>Answer the following:</p>
+<ol type="1">
+<li>How many SNMP request messages are generated in Experiment 1?</li>
+<li>How many are generated in Experiment 2?</li>
+<li>How many SNMP response messages are generated in each case?</li>
+<li>Which approach is faster in your experiment?</li>
+<li>Why?</li>
+<li>Is requesting an arbitrarily large number of objects in a single GET always a good idea?</li>
+</ol>
+</div>
+</section>
+</section>
+<section id="verifying-the-difference-on-the-network" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="verifying-the-difference-on-the-network"><span class="header-section-number">6.3</span> Verifying the Difference on the Network</h2>
+<p>Use a packet capture to repeat Experiments 1 and 2.</p>
+<p>You do not need to analyse every packet in detail. Instead, verify the number of SNMP requests and responses generated in each experiment.</p>
+<p>You should observe approximately:</p>
+<pre class="text"><code>Experiment 1
+
+Manager                         Agent
+   │                              │
+   │──── GET sysDescr ───────────&gt;│
+   │&lt;──── RESPONSE ───────────────│
+   │──── GET sysObjectID ────────&gt;│
+   │&lt;──── RESPONSE ───────────────│
+   │──── GET sysUpTime ──────────&gt;│
+   │&lt;──── RESPONSE ───────────────│
+   │             ...              │
+
+
+Experiment 2
+
+Manager                         Agent
+   │                              │
+   │──── GET ────────────────────&gt;│
+   │     sysDescr                 │
+   │     sysObjectID              │
+   │     sysUpTime                │
+   │     ...                      │
+   │                              │
+   │&lt;──── RESPONSE ───────────────│
+   │      multiple VarBinds       │</code></pre>
+<p>Relate the packet capture to the execution times measured by your Python program.</p>
+</section>
+<section id="what-happens-when-an-object-does-not-exist" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="what-happens-when-an-object-does-not-exist"><span class="header-section-number">6.4</span> What Happens When an Object Does Not Exist?</h2>
+<p>We will now examine how SNMP handles errors.</p>
+<p>Create a GET request containing several valid objects from the <code>system</code> group and one OID that does not exist.</p>
+<p>For example, you may deliberately modify one of the valid OIDs.</p>
+<p>First perform the request using <strong>SNMPv1</strong>.</p>
+<p>In PySNMP, SNMPv1 can be selected using:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>CommunityData(<span class="st">"public"</span>, mpModel<span class="op">=</span><span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Record:</p>
+<ul>
+<li><code>error_indication</code>;</li>
+<li><code>error_status</code>;</li>
+<li><code>error_index</code>;</li>
+<li>the returned VarBinds.</li>
+</ul>
+<p>Now repeat exactly the same request using <strong>SNMPv2c</strong>:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>CommunityData(<span class="st">"public"</span>, mpModel<span class="op">=</span><span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Compare the results.</p>
+<section id="snmpv1-vs-snmpv2c" class="level3 callout-question" data-number="6.4.1">
+<h3 data-number="6.4.1" class="anchored" data-anchor-id="snmpv1-vs-snmpv2c"><span class="header-section-number">6.4.1</span> SNMPv1 vs SNMPv2c</h3>
+<ol type="1">
+<li>What happens to the complete request when one of the requested objects does not exist in SNMPv1?</li>
+<li>Can you determine which VarBind caused the error?</li>
+<li>What happens with SNMPv2c?</li>
+<li>Are the valid objects still returned?</li>
+<li>How is the nonexistent object represented?</li>
+</ol>
+<p>Explain why the SNMPv2c behaviour is more useful when a manager requests several objects in a single operation.</p>
+</section>
+</section>
+<section id="sequential-requests-vs-concurrent-requests" class="level2" data-number="6.5">
+<h2 data-number="6.5" class="anchored" data-anchor-id="sequential-requests-vs-concurrent-requests"><span class="header-section-number">6.5</span> Sequential Requests vs Concurrent Requests</h2>
+<p>Experiment 1 deliberately performed the seven GET operations sequentially:</p>
+<pre class="text"><code>GET 1 → wait → GET 2 → wait → GET 3 → wait → ...</code></pre>
+<p>However, SNMP requests are primarily <strong>I/O-bound operations</strong>: most of the time the program is waiting for network responses.</p>
+<p>Create a third version in which the seven individual GET operations are started concurrently using <code>asyncio.gather()</code>.</p>
+<p>Conceptually:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> <span class="cf">await</span> asyncio.gather(</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    get_one(OID_1),</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    get_one(OID_2),</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    get_one(OID_3),</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ...</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Measure the execution time.</p>
+<p>You now have three different strategies:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Strategy</th>
+<th style="text-align: right;">SNMP requests</th>
+<th>Execution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Individual GETs</td>
+<td style="text-align: right;">7</td>
+<td>Sequential</td>
+</tr>
+<tr class="even">
+<td>Multiple VarBinds</td>
+<td style="text-align: right;">1</td>
+<td>Single request</td>
+</tr>
+<tr class="odd">
+<td>Individual GETs + <code>gather()</code></td>
+<td style="text-align: right;">7</td>
+<td>Concurrent</td>
+</tr>
+</tbody>
+</table>
+<div class="callout-question">
+<p>Compare the three measured times.</p>
+<p>Why can concurrent individual GETs be significantly faster than sequential GETs even though both approaches generate the same number of SNMP messages?</p>
+<p>Does concurrency eliminate the network overhead of sending multiple SNMP requests?</p>
+<p>Which of the three approaches would you choose for retrieving several objects from <strong>one device</strong>? Would your answer necessarily be the same if you were monitoring <strong>many different devices</strong>?</p>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This distinction will become important later in the lab.</p>
+<p>When monitoring a single device, grouping several objects into one SNMP request can reduce protocol overhead.</p>
+<p>When monitoring many independent devices, asynchronous execution allows the manager to communicate with several agents without waiting for each operation to finish before starting the next one.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="navigating-the-mib-getnext-and-walk" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Navigating the MIB: GETNEXT and WALK</h1>
+<p>So far, every GET operation required the manager to know the exact OID of the object to retrieve.</p>
+<p>But what happens if the manager does not know all the objects available below a particular OID?</p>
+<p>SNMP provides the <code>GETNEXT</code> operation for this purpose.</p>
+<section id="using-getnext" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="using-getnext"><span class="header-section-number">7.1</span> Using GETNEXT</h2>
+<p>A GETNEXT request does not ask for the value of the specified OID itself. Instead, it asks the agent for the <strong>next OID in lexicographical order</strong>.</p>
+<p>For example, consider part of the MIB-II <code>system</code> subtree:</p>
+<pre class="text"><code>1.3.6.1.2.1.1
+│
+├── 1.3.6.1.2.1.1.1.0   sysDescr.0
+├── 1.3.6.1.2.1.1.2.0   sysObjectID.0
+├── 1.3.6.1.2.1.1.3.0   sysUpTime.0
+├── 1.3.6.1.2.1.1.4.0   sysContact.0
+├── 1.3.6.1.2.1.1.5.0   sysName.0
+└── ...</code></pre>
+<p>If the manager asks for the object following:</p>
+<pre class="text"><code>1.3.6.1.2.1.1.1.0</code></pre>
+<p>the agent should return:</p>
+<pre class="text"><code>1.3.6.1.2.1.1.2.0</code></pre>
+<p>Try it from the command line:</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpgetnext</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> 1.3.6.1.2.1.1.1.0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now try:</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpgetnext</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> 1.3.6.1.2.1.1.2.0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>and observe the returned OID.</p>
+<div class="callout-question">
+<p>What information must the manager know to perform a GET?</p>
+<p>What information must it know to perform a GETNEXT?</p>
+<p>Why can GETNEXT be useful when the manager does not know the complete contents of a MIB subtree?</p>
+</div>
+</section>
+<section id="building-a-walk-from-getnext" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="building-a-walk-from-getnext"><span class="header-section-number">7.2</span> Building a WALK from GETNEXT</h2>
+<p>There is no <code>WALK</code> PDU in the SNMP protocol.</p>
+<p>An SNMP walk is obtained by repeatedly asking the agent for the next object:</p>
+<pre class="text"><code>start OID
+    │
+    ▼
+ GETNEXT
+    │
+    ▼
+returned OID ───┐
+                │
+                ▼
+             GETNEXT
+                │
+                ▼
+          returned OID ───┐
+                          │
+                         ...</code></pre>
+<p>The OID returned by one request becomes the starting OID for the next request.</p>
+<p>The process continues until the returned OID no longer belongs to the subtree being explored.</p>
+<section id="experiment-implement-your-own-walk" class="level3" data-number="7.2.1">
+<h3 data-number="7.2.1" class="anchored" data-anchor-id="experiment-implement-your-own-walk"><span class="header-section-number">7.2.1</span> Experiment — Implement your own walk</h3>
+<p>Create:</p>
+<pre class="text"><code>my_walk.py</code></pre>
+<p>Your program must receive a starting OID and use repeated GETNEXT operations to display every object below that OID.</p>
+<p>Test it using the MIB-II <code>system</code> subtree:</p>
+<pre class="text"><code>1.3.6.1.2.1.1</code></pre>
+<p>The output should contain lines similar to:</p>
+<pre class="text"><code>1.3.6.1.2.1.1.1.0   OctetString       ...
+1.3.6.1.2.1.1.2.0   ObjectIdentifier  ...
+1.3.6.1.2.1.1.3.0   TimeTicks         ...
+...</code></pre>
+<p>Your program must stop automatically when the returned OID is no longer below:</p>
+<pre class="text"><code>1.3.6.1.2.1.1</code></pre>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Do not simply perform a fixed number of GETNEXT operations.</p>
+<p>A network management application cannot assume how many objects an agent implements below a subtree. Your program must determine when it has left the requested subtree.</p>
+</div>
+</div>
+<div class="callout-question">
+<p>Suppose your program starts at:</p>
+<pre class="text"><code>1.3.6.1.2.1.1</code></pre>
+<p>and eventually receives:</p>
+<pre class="text"><code>1.3.6.1.2.1.2....</code></pre>
+<p>Why should the walk stop even though the agent has successfully returned another object?</p>
+</div>
+</section>
+</section>
+<section id="comparing-with-snmpwalk" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="comparing-with-snmpwalk"><span class="header-section-number">7.3</span> Comparing with <code>snmpwalk</code></h2>
+<p>Now execute:</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpwalk</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> 1.3.6.1.2.1.1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Compare its output with your Python program.</p>
+<p>Both should traverse essentially the same part of the MIB.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>snmpwalk</code> is a convenient manager-side operation. It should not be confused with an SNMP protocol PDU.</p>
+<p>Understanding this distinction is important:</p>
+<pre class="text"><code>SNMP protocol operation          Manager-side operation
+
+GET                              GET
+GETNEXT       ────────────────►  WALK
+GETBULK
+SET
+RESPONSE
+...</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="working-with-snmp-tables" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Working with SNMP Tables</h1>
+<p>Scalar objects such as <code>sysName.0</code> represent a single value.</p>
+<p>Network management, however, frequently involves collections of similar objects. A router may have many interfaces, routes, neighbours, or addresses.</p>
+<p>SNMP represents this type of information using <strong>tables</strong>.</p>
+<section id="the-interface-table" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="the-interface-table"><span class="header-section-number">8.1</span> The Interface Table</h2>
+<p>MIB-II provides information about the network interfaces of a device below the <code>interfaces</code> subtree:</p>
+<pre class="text"><code>1.3.6.1.2.1.2</code></pre>
+<p>Explore it:</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpwalk</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> 1.3.6.1.2.1.2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The interface table contains information such as:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Object</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ifIndex</code></td>
+<td>Interface identifier</td>
+</tr>
+<tr class="even">
+<td><code>ifDescr</code></td>
+<td>Interface description</td>
+</tr>
+<tr class="odd">
+<td><code>ifType</code></td>
+<td>Interface type</td>
+</tr>
+<tr class="even">
+<td><code>ifMtu</code></td>
+<td>Maximum transmission unit</td>
+</tr>
+<tr class="odd">
+<td><code>ifSpeed</code></td>
+<td>Estimated interface bandwidth</td>
+</tr>
+<tr class="even">
+<td><code>ifPhysAddress</code></td>
+<td>Physical address</td>
+</tr>
+<tr class="odd">
+<td><code>ifAdminStatus</code></td>
+<td>Desired interface state</td>
+</tr>
+<tr class="even">
+<td><code>ifOperStatus</code></td>
+<td>Current operational state</td>
+</tr>
+<tr class="odd">
+<td><code>ifInOctets</code></td>
+<td>Received octets</td>
+</tr>
+<tr class="even">
+<td><code>ifOutOctets</code></td>
+<td>Transmitted octets</td>
+</tr>
+</tbody>
+</table>
+<p>Unlike scalar objects, table objects have an <strong>index</strong> identifying the row.</p>
+<p>For example:</p>
+<pre class="text"><code>ifDescr.1 = "ether1"
+ifDescr.2 = "ether2"
+ifDescr.3 = "ether3"</code></pre>
+<p>can be understood as:</p>
+<pre class="text"><code>             ifIndex
+
+               1        2        3
+               │        │        │
+               ▼        ▼        ▼
+
+ifDescr      ether1   ether2   ether3
+ifType       ...      ...      ...
+ifSpeed      ...      ...      ...
+ifOperStatus ...      ...      ...
+ifInOctets   ...      ...      ...
+ifOutOctets  ...      ...      ...</code></pre>
+<p>The index therefore connects values belonging to the <strong>same interface</strong>.</p>
+</section>
+<section id="building-an-interface-inventory" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="building-an-interface-inventory"><span class="header-section-number">8.2</span> Building an Interface Inventory</h2>
+<p>Create:</p>
+<pre class="text"><code>interfaces.py</code></pre>
+<p>Use SNMP to discover the interfaces available on your MikroTik.</p>
+<p>For each interface, display at least:</p>
+<pre class="text"><code>INDEX   NAME       TYPE       ADMIN       OPER
+1       ether1     ...        up          up
+2       ether2     ...        up          up
+3       ether3     ...        down        down
+...</code></pre>
+<p>Do not assume that the MikroTik has a fixed number of interfaces or that their indexes are consecutive.</p>
+<p>Your program should obtain this information dynamically from SNMP.</p>
+<div class="callout-question">
+<p>Consider the following two objects:</p>
+<pre class="text"><code>ifDescr.4
+ifOperStatus.4</code></pre>
+<p>What does the <code>.4</code> represent?</p>
+<p>How does this differ from the <code>.0</code> used in:</p>
+<pre class="text"><code>sysName.0</code></pre>
+</div>
+</section>
+<section id="from-inventory-to-telemetry" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="from-inventory-to-telemetry"><span class="header-section-number">8.3</span> From Inventory to Telemetry</h2>
+<p>Now inspect the values of:</p>
+<pre class="text"><code>ifInOctets
+ifOutOctets</code></pre>
+<p>for one of the active interfaces.</p>
+<p>Generate some network traffic and retrieve the values again.</p>
+<div class="callout-question">
+<p>Do <code>ifInOctets</code> and <code>ifOutOctets</code> represent:</p>
+<ul>
+<li>the current traffic rate,</li>
+<li>the number of bytes transferred during the last second, or</li>
+<li>cumulative counters?</li>
+</ul>
+<p>What happens to their values while traffic crosses the interface?</p>
+<p>Could you calculate a traffic rate if you obtained the same counter at two different times?</p>
+</div>
+<p>This observation will be the starting point for the next section, where we will turn SNMP counters into <strong>network telemetry</strong>.</p>
+</section>
+</section>
+<section id="from-counters-to-telemetry" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> From Counters to Telemetry</h1>
+<p>In the previous section, you observed that <code>ifInOctets</code> and <code>ifOutOctets</code> are <strong>cumulative counters</strong>.</p>
+<p>They do not directly tell us the current traffic rate of an interface.</p>
+<p>To obtain a rate, the manager must sample a counter at different times and calculate how much it has changed.</p>
+<section id="from-a-counter-to-a-rate" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="from-a-counter-to-a-rate"><span class="header-section-number">9.1</span> From a Counter to a Rate</h2>
+<p>Suppose that the value of <code>ifInOctets</code> is measured at two different times:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Time</th>
+<th style="text-align: right;">Counter</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(t_1\)</span></td>
+<td style="text-align: right;"><span class="math inline">\(C_1\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(t_2\)</span></td>
+<td style="text-align: right;"><span class="math inline">\(C_2\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>The average incoming traffic rate during that interval is:</p>
+<p><span class="math display">\[
+R_{\text{in}} =
+8 \frac{C_2-C_1}{t_2-t_1}
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(C_1\)</span> and <span class="math inline">\(C_2\)</span> are counter values in octets;</li>
+<li><span class="math inline">\(t_1\)</span> and <span class="math inline">\(t_2\)</span> are measured in seconds;</li>
+<li>the factor 8 converts octets into bits;</li>
+<li><span class="math inline">\(R_{\text{in}}\)</span> is expressed in bit/s.</li>
+</ul>
+<p>The same calculation can be applied to <code>ifOutOctets</code>.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>SNMP does not calculate the traffic rate for us.</p>
+<p>The agent exposes a <strong>counter</strong>. The manager samples that counter and derives the <strong>rate</strong>.</p>
+<p>This distinction between a raw measurement and a derived metric is fundamental in network monitoring and observability.</p>
+</div>
+</div>
+</section>
+<section id="measuring-the-traffic-rate-of-an-interface" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="measuring-the-traffic-rate-of-an-interface"><span class="header-section-number">9.2</span> Measuring the Traffic Rate of an Interface</h2>
+<p>Create:</p>
+<pre class="text"><code>interface_rate.py</code></pre>
+<p>Your program must:</p>
+<ol type="1">
+<li>obtain the available interfaces from the MikroTik;</li>
+<li>display them to the user;</li>
+<li>allow the user to select one interface;</li>
+<li>retrieve its input and output octet counters;</li>
+<li>wait for a configurable sampling interval;</li>
+<li>retrieve the counters again;</li>
+<li>calculate the input and output traffic rates;</li>
+<li>display the results in bit/s.</li>
+</ol>
+<p>A possible execution could look like:</p>
+<pre class="text"><code>Available interfaces:
+
+[1] ether1
+[2] ether2
+[3] ether3
+
+Select interface: 1
+Sampling interval [s]: 5
+
+Interface: ether1
+RX:  2.43 Mbit/s
+TX:  817.32 kbit/s</code></pre>
+<div class="callout-question">
+<p>If the sampling interval is 5 seconds, does the calculated value represent the instantaneous traffic rate at the moment of the second measurement?</p>
+<p>What does it actually represent?</p>
+</div>
+</section>
+<section id="sampling-interval" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="sampling-interval"><span class="header-section-number">9.3</span> Sampling Interval</h2>
+<p>The <strong>sampling interval</strong> determines how often the monitoring system retrieves the counters.</p>
+<p>Consider two extreme cases:</p>
+<pre class="text"><code>Short sampling interval
+
+C1 ── C2 ── C3 ── C4 ── C5 ── C6
+│     │     │     │     │     │
+└─1s──┴─1s──┴─1s──┴─1s──┴─1s──┘
+
+More detail
+More SNMP requests
+
+
+Long sampling interval
+
+C1 ─────────────────── C2
+│                      │
+└──────── 60 s ────────┘
+
+Less detail
+Fewer SNMP requests</code></pre>
+<div class="callout-question">
+<p>Compare sampling intervals of:</p>
+<pre class="text"><code>1 s
+10 s
+60 s
+5 min</code></pre>
+<p>What are the advantages and disadvantages of each?</p>
+<p>Would you use the same sampling interval to monitor 5 interfaces and 50,000 interfaces?</p>
+</div>
+</section>
+<section id="continuous-monitoring" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="continuous-monitoring"><span class="header-section-number">9.4</span> Continuous Monitoring</h2>
+<p>Modify <code>interface_rate.py</code> so that it continuously monitors the selected interface.</p>
+<p>After the first measurement, you do not need to retrieve two completely new samples for every rate calculation.</p>
+<p>Instead:</p>
+<pre class="text"><code>C1        C2        C3        C4        C5
+│         │         │         │         │
+└── Δ1 ───┘         │         │         │
+          └── Δ2 ───┘         │         │
+                    └── Δ3 ───┘         │
+                              └── Δ4 ───┘</code></pre>
+<p>Each new counter value becomes the previous value for the next calculation.</p>
+<p>Display one measurement per sampling interval:</p>
+<pre class="text"><code>TIME       RX              TX
+14:32:05   1.24 Mbit/s     340.1 kbit/s
+14:32:10   2.81 Mbit/s     512.4 kbit/s
+14:32:15   950.2 kbit/s    1.13 Mbit/s
+...</code></pre>
+<p>Stop the monitor using <code>Ctrl+C</code>.</p>
+</section>
+<section id="counter-size-matters" class="level2" data-number="9.5">
+<h2 data-number="9.5" class="anchored" data-anchor-id="counter-size-matters"><span class="header-section-number">9.5</span> Counter Size Matters</h2>
+<p>The original MIB-II interface table defines:</p>
+<pre class="text"><code>ifInOctets
+ifOutOctets</code></pre>
+<p>as 32-bit counters.</p>
+<p>A 32-bit unsigned counter can represent values from:</p>
+<p><span class="math display">\[
+0
+\quad\text{to}\quad
+2^{32}-1
+\]</span></p>
+<p>After reaching its maximum value, the counter wraps around.</p>
+<p>Consider a continuously busy <strong>1 Gbit/s</strong> interface.</p>
+<div class="callout-question">
+<p>Calculate approximately how long it would take a 32-bit octet counter to wrap around at 1 Gbit/s.</p>
+<p>Is this a problem if the monitoring system samples the interface every 5 minutes?</p>
+</div>
+<p>For higher-capacity interfaces, IF-MIB provides 64-bit counters:</p>
+<pre class="text"><code>ifHCInOctets
+ifHCOutOctets</code></pre>
+<p>where <strong>HC</strong> stands for <em>High Capacity</em>.</p>
+<p>Whenever they are available, these counters are generally preferable for traffic monitoring.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A robust monitoring application should not simply assume that:</p>
+<pre class="text"><code>new_counter &gt;= old_counter</code></pre>
+<p>A counter may become smaller because of:</p>
+<ul>
+<li>counter wraparound;</li>
+<li>device or interface restart;</li>
+<li>agent restart.</li>
+</ul>
+<p>Production monitoring systems must account for these situations.</p>
+</div>
+</div>
+</section>
+<section id="using-high-capacity-counters" class="level2" data-number="9.6">
+<h2 data-number="9.6" class="anchored" data-anchor-id="using-high-capacity-counters"><span class="header-section-number">9.6</span> Using High-Capacity Counters</h2>
+<p>Check whether your MikroTik exposes:</p>
+<pre class="text"><code>ifHCInOctets
+ifHCOutOctets</code></pre>
+<p>for the selected interface.</p>
+<p>Modify your monitor to use the 64-bit counters when they are available.</p>
+<div class="callout-question">
+<p>What ASN.1/SNMP data type is returned for <code>ifInOctets</code>?</p>
+<p>What type is returned for <code>ifHCInOctets</code>?</p>
+<p>How many bits does each counter use?</p>
+</div>
+</section>
+<section id="interface-utilization" class="level2" data-number="9.7">
+<h2 data-number="9.7" class="anchored" data-anchor-id="interface-utilization"><span class="header-section-number">9.7</span> Interface Utilization</h2>
+<p>A traffic rate becomes easier to interpret when it is compared with the capacity of the interface.</p>
+<p>If the nominal interface speed is <span class="math inline">\(S\)</span>, the utilization can be calculated as:</p>
+<p><span class="math display">\[
+U_{\text{in}} =
+100\frac{R_{\text{in}}}{S}
+\]</span></p>
+<p>and:</p>
+<p><span class="math display">\[
+U_{\text{out}} =
+100\frac{R_{\text{out}}}{S}
+\]</span></p>
+<p>Retrieve the appropriate interface speed information through SNMP and extend your program to display utilization.</p>
+<p>For example:</p>
+<pre class="text"><code>TIME       RX             RX UTIL.    TX             TX UTIL.
+14:32:05   1.24 Mbit/s      1.24%    340.1 kbit/s      0.34%
+14:32:10   2.81 Mbit/s      2.81%    512.4 kbit/s      0.51%
+14:32:15   950.2 kbit/s     0.95%    1.13 Mbit/s       1.13%</code></pre>
+<div class="callout-question">
+<p>Does the nominal speed reported by an interface necessarily represent the amount of bandwidth actually available to an application?</p>
+<p>Why is interface utilization nevertheless a useful management metric?</p>
+</div>
+</section>
+</section>
+<section id="monitoring-more-than-one-interface" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> Monitoring More Than One Interface</h1>
+<p>So far, the program monitors a single interface.</p>
+<p>A network management system normally monitors many interfaces and many devices.</p>
+<p>Suppose that retrieving the counters from one interface takes approximately 100 ms.</p>
+<p>A purely sequential monitor could behave like:</p>
+<pre class="text"><code>interface 1  ███ 100 ms
+interface 2      ███ 100 ms
+interface 3          ███ 100 ms
+interface 4              ███ 100 ms
+...</code></pre>
+<p>As the number of monitored objects increases, waiting for every network operation sequentially becomes inefficient.</p>
+<section id="concurrent-polling-with-asyncio" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="concurrent-polling-with-asyncio"><span class="header-section-number">10.1</span> Concurrent Polling with <code>asyncio</code></h2>
+<p>Modify your program so that it can monitor several interfaces concurrently.</p>
+<p>Use the asynchronous concepts introduced in the Python class:</p>
+<div class="sourceCode" id="cb72"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> asyncio.gather(</span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>    poll_interface(...),</span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>    poll_interface(...),</span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a>    poll_interface(...),</span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Conceptually:</p>
+<pre class="text"><code>Sequential
+
+A: request ───── response
+                      B: request ───── response
+                                            C: request ───── response
+
+
+Concurrent
+
+A: request ───────────────── response
+B: request ─────────── response
+C: request ───────────────────── response</code></pre>
+<p>The program can use the time spent waiting for one network response to process or wait for others.</p>
+<div class="callout-question">
+<p>Does <code>asyncio</code> make the MikroTik answer an individual SNMP request faster?</p>
+<p>If not, why can it significantly reduce the total time required to poll many independent objects or devices?</p>
+</div>
+</section>
+<section id="final-monitor" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="final-monitor"><span class="header-section-number">10.2</span> Final Monitor</h2>
+<p>Your final program for this section should allow the user to select one or more interfaces and continuously display:</p>
+<ul>
+<li>interface name;</li>
+<li>operational status;</li>
+<li>input traffic rate;</li>
+<li>output traffic rate;</li>
+<li>input utilization;</li>
+<li>output utilization.</li>
+</ul>
+<p>Use high-capacity counters when available.</p>
+<p>The program should update the measurements periodically without requiring user interaction.</p>
+<p>At this point, you have built the fundamental data collection loop used by a network monitoring system:</p>
+<pre class="text"><code>       POLL
+        │
+        ▼
+┌─────────────────┐
+│ Read counters   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Calculate rates │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Interpret data  │
+└────────┬────────┘
+         │
+         ▼
+       WAIT
+         │
+         └──────────────► POLL AGAIN</code></pre>
+<p>In later labs, the same general idea will be extended from individual SNMP measurements to a complete telemetry and observability platform.</p>
+</section>
+</section>
+<section id="automatic-device-discovery" class="level1" data-number="11">
+<h1 data-number="11"><span class="header-section-number">11</span> Automatic Device Discovery</h1>
+<p>Until now, we have assumed that the network manager already knows the IP address of the device to monitor.</p>
+<p>In a real network management system, this information may not be known in advance. Management platforms therefore provide <strong>device discovery</strong> mechanisms to find devices and build an inventory automatically.</p>
+<p>A simplified discovery process can be represented as:</p>
+<pre class="text"><code>          Network
+             │
+             ▼
+      Discover hosts
+             │
+             ▼
+       IP + MAC address
+             │
+             ▼
+        Probe SNMP
+             │
+        ┌────┴────┐
+        │         │
+       No        Yes
+                  │
+                  ▼
+             Identify device
+                  │
+                  ▼
+       sysName / sysDescr /
+          sysObjectID
+                  │
+                  ▼
+          Device inventory</code></pre>
+<p>In this section, you will implement a simplified version of this process.</p>
+<section id="discovering-hosts-on-a-local-network" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="discovering-hosts-on-a-local-network"><span class="header-section-number">11.1</span> Discovering Hosts on a Local Network</h2>
+<p>If the manager is directly connected to an IPv4 LAN, <strong>ARP</strong> provides a useful mechanism for discovering active hosts.</p>
+<p>The manager can send an ARP request asking:</p>
+<pre class="text"><code>Who has 192.168.153.1?
+Who has 192.168.153.2?
+Who has 192.168.153.3?
+...</code></pre>
+<p>A device using one of those addresses can reply with its MAC address:</p>
+<pre class="text"><code>Manager                                  Device
+
+   │                                       │
+   │── ARP: Who has 192.168.153.10? ─────&gt;│
+   │                                       │
+   │&lt;── ARP: 192.168.153.10 is at MAC ────│
+   │                                       │</code></pre>
+<p>This provides two useful pieces of inventory information:</p>
+<pre class="text"><code>IP address  ↔  MAC address</code></pre>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>ARP discovery only works for devices in the same Layer-2 broadcast domain.</p>
+<p>Routers do not normally forward ARP requests. Therefore, a management platform cannot use ARP alone to discover arbitrary remote networks.</p>
+</div>
+</div>
+</section>
+<section id="arp-discovery-with-scapy" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="arp-discovery-with-scapy"><span class="header-section-number">11.2</span> ARP Discovery with Scapy</h2>
+<p>For this experiment, we will use <strong>Scapy</strong>, a Python library for creating, sending, receiving, and inspecting network packets.</p>
+<p>We will only use a very small part of Scapy. The objective of this lab is not to learn the complete library, but to use it to implement the discovery mechanism discussed above.</p>
+<p>Install Scapy inside your virtual environment:</p>
+<div class="sourceCode" id="cb79"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install scapy</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="building-packets-with-scapy" class="level3" data-number="11.2.1">
+<h3 data-number="11.2.1" class="anchored" data-anchor-id="building-packets-with-scapy"><span class="header-section-number">11.2.1</span> Building Packets with Scapy</h3>
+<p>Scapy represents network protocols as Python objects.</p>
+<p>For example:</p>
+<div class="sourceCode" id="cb80"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scapy.<span class="bu">all</span> <span class="im">import</span> ARP</span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>packet <span class="op">=</span> ARP(</span>
+<span id="cb80-4"><a href="#cb80-4" aria-hidden="true" tabindex="-1"></a>    pdst<span class="op">=</span><span class="st">"192.168.153.10"</span></span>
+<span id="cb80-5"><a href="#cb80-5" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>creates an ARP packet asking about the IPv4 address <code>192.168.153.10</code>.</p>
+<p>You can inspect the packet using:</p>
+<div class="sourceCode" id="cb81"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a>packet.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Try it.</p>
+<div class="callout-question">
+<p>Find the following fields in the output:</p>
+<ul>
+<li>operation (<code>op</code>);</li>
+<li>target protocol address (<code>pdst</code>);</li>
+<li>sender protocol address (<code>psrc</code>);</li>
+<li>target hardware address (<code>hwdst</code>).</li>
+</ul>
+<p>What values has Scapy automatically selected for the fields that you did not specify?</p>
+</div>
+</section>
+<section id="ethernet-and-arp" class="level3" data-number="11.2.2">
+<h3 data-number="11.2.2" class="anchored" data-anchor-id="ethernet-and-arp"><span class="header-section-number">11.2.2</span> Ethernet and ARP</h3>
+<p>ARP requests are transmitted inside Ethernet frames.</p>
+<p>An ARP request intended for all hosts on the LAN therefore uses the Ethernet broadcast address:</p>
+<pre class="text"><code>ff:ff:ff:ff:ff:ff</code></pre>
+<p>In Scapy, an Ethernet frame can be created with:</p>
+<div class="sourceCode" id="cb83"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scapy.<span class="bu">all</span> <span class="im">import</span> Ether</span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>ethernet <span class="op">=</span> Ether(dst<span class="op">=</span><span class="st">"ff:ff:ff:ff:ff:ff"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Scapy uses the <code>/</code> operator to encapsulate one protocol inside another:</p>
+<div class="sourceCode" id="cb84"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a>packet <span class="op">=</span> ethernet <span class="op">/</span> ARP(pdst<span class="op">=</span><span class="st">"192.168.153.10"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This represents:</p>
+<pre class="text"><code>┌─────────────────────────────┐
+│ Ethernet                    │
+│ dst = ff:ff:ff:ff:ff:ff     │
+│                             │
+│   ┌─────────────────────┐   │
+│   │ ARP                 │   │
+│   │                     │   │
+│   │ Who has             │   │
+│   │ 192.168.153.10?     │   │
+│   └─────────────────────┘   │
+└─────────────────────────────┘</code></pre>
+<p>Inspect the complete packet:</p>
+<div class="sourceCode" id="cb86"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a>packet.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Notice that <code>/</code> does <strong>not</strong> mean division in this context. Scapy overloads the operator to construct a protocol stack.</p>
+</section>
+<section id="sending-and-receiving-packets" class="level3" data-number="11.2.3">
+<h3 data-number="11.2.3" class="anchored" data-anchor-id="sending-and-receiving-packets"><span class="header-section-number">11.2.3</span> Sending and Receiving Packets</h3>
+<p>Scapy provides several functions for sending packets.</p>
+<p>Because we are working directly with Ethernet frames, we will use <code>srp()</code>:</p>
+<div class="sourceCode" id="cb87"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scapy.<span class="bu">all</span> <span class="im">import</span> srp</span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>answered, unanswered <span class="op">=</span> srp(</span>
+<span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a>    packet,</span>
+<span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a>    verbose<span class="op">=</span><span class="va">False</span></span>
+<span id="cb87-7"><a href="#cb87-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>srp()</code> means approximately:</p>
+<pre class="text"><code>send and receive packets at Layer 2</code></pre>
+<p>and returns two collections:</p>
+<pre class="text"><code>answered
+unanswered</code></pre>
+<p>Each item in <code>answered</code> contains both:</p>
+<pre class="text"><code>packet sent  →  packet received</code></pre>
+<p>For an ARP response, the received packet provides the information we need:</p>
+<div class="sourceCode" id="cb91"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> sent, received <span class="kw">in</span> answered:</span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(received.psrc)</span>
+<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(received.hwsrc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>where:</p>
+<pre class="text"><code>psrc   → source protocol address → IPv4 address
+hwsrc  → source hardware address → MAC address</code></pre>
+<div class="callout callout-style-default callout-note callout-titled" title="Scapy and asyncio">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Scapy and asyncio
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The <code>srp()</code> function used here is a <strong>blocking operation</strong>.</p>
+<p>Calling it from an <code>async</code> function does not automatically make it asynchronous:</p>
+<div class="sourceCode" id="cb93"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> discover():</span>
+<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a>    answered, unanswered <span class="op">=</span> srp(...)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>While <code>srp()</code> is running, the Python <code>asyncio</code> event loop cannot execute other tasks.</p>
+<p>For this exercise, this is not a problem. Scapy sends the ARP probes and collects their responses as a single discovery operation:</p>
+<pre class="text"><code>                    ARP discovery
+                         │
+       ┌─────────────────┼─────────────────┐
+       ▼                 ▼                 ▼
+     host 1            host 2            host 3
+       │                 │                 │
+       └─────────────────┼─────────────────┘
+                         ▼
+                    ARP responses</code></pre>
+<p>We will therefore perform ARP discovery with Scapy first and then use <code>asyncio</code> for the SNMP queries:</p>
+<pre class="text"><code>        Scapy ARP discovery
+               │
+               ▼
+       discovered hosts
+               │
+       ┌───────┼───────┐
+       ▼       ▼       ▼
+     host 1  host 2  host 3
+       │       │       │
+       └── concurrent ─┘
+          SNMP queries
+           (asyncio)</code></pre>
+<p>This also illustrates an important Python concept:</p>
+<blockquote class="blockquote">
+<p><code>asyncio</code> provides concurrency only when the operations being called are asynchronous and yield control while they are waiting.</p>
+</blockquote>
+</div>
+</div>
+</section>
+<section id="discovering-a-complete-subnet" class="level3" data-number="11.2.4">
+<h3 data-number="11.2.4" class="anchored" data-anchor-id="discovering-a-complete-subnet"><span class="header-section-number">11.2.4</span> Discovering a Complete Subnet</h3>
+<p>Scapy also accepts a network in CIDR notation as the destination of an ARP request.</p>
+<p>For example:</p>
+<div class="sourceCode" id="cb96"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a>ARP(pdst<span class="op">=</span><span class="st">"192.168.153.0/24"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>represents ARP requests for the addresses in that subnet.</p>
+<p>Therefore, the basic discovery operation can be constructed as:</p>
+<div class="sourceCode" id="cb97"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scapy.<span class="bu">all</span> <span class="im">import</span> ARP, Ether, srp</span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>network <span class="op">=</span> <span class="st">"192.168.153.0/24"</span></span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a>packet <span class="op">=</span> (</span>
+<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>    Ether(dst<span class="op">=</span><span class="st">"ff:ff:ff:ff:ff:ff"</span>)</span>
+<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">/</span> ARP(pdst<span class="op">=</span>network)</span>
+<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb97-9"><a href="#cb97-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-10"><a href="#cb97-10" aria-hidden="true" tabindex="-1"></a>answered, unanswered <span class="op">=</span> srp(</span>
+<span id="cb97-11"><a href="#cb97-11" aria-hidden="true" tabindex="-1"></a>    packet,</span>
+<span id="cb97-12"><a href="#cb97-12" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb97-13"><a href="#cb97-13" aria-hidden="true" tabindex="-1"></a>    verbose<span class="op">=</span><span class="va">False</span></span>
+<span id="cb97-14"><a href="#cb97-14" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout-question">
+<p>Before continuing, make sure you can explain each part of:</p>
+<div class="sourceCode" id="cb98"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a>Ether(dst<span class="op">=</span><span class="st">"ff:ff:ff:ff:ff:ff"</span>) <span class="op">/</span> ARP(pdst<span class="op">=</span>network)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In particular:</p>
+<ol type="1">
+<li>Why is the Ethernet destination address a broadcast address?</li>
+<li>Why can the ARP destination contain a <code>/24</code> network rather than a single address?</li>
+<li>What does <code>/</code> mean in Scapy?</li>
+<li>Why are we using <code>srp()</code> rather than simply sending the packets?</li>
+</ol>
+</div>
+</section>
+<section id="exercise-build-the-host-inventory" class="level3" data-number="11.2.5">
+<h3 data-number="11.2.5" class="anchored" data-anchor-id="exercise-build-the-host-inventory"><span class="header-section-number">11.2.5</span> Exercise — Build the Host Inventory</h3>
+<p>Create:</p>
+<pre class="text"><code>discover.py</code></pre>
+<p>Using the previous example as a starting point, process the responses and produce a table containing the discovered IP and MAC addresses:</p>
+<pre class="text"><code>IP ADDRESS          MAC ADDRESS
+192.168.153.1       48:a9:8a:...
+192.168.153.4       02:42:ac:...
+192.168.153.17      bc:24:11:...
+...</code></pre>
+<p>Do not copy the example blindly. You should understand how the Ethernet frame, the ARP request, <code>srp()</code>, and the returned responses work before constructing the inventory.</p>
+</section>
+</section>
+<section id="arp-is-not-the-only-discovery-mechanism" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="arp-is-not-the-only-discovery-mechanism"><span class="header-section-number">11.3</span> ARP Is Not the Only Discovery Mechanism</h2>
+<p>Network discovery does not rely on a single universal mechanism.</p>
+<p>Depending on the network and the information available, management systems may combine different sources such as:</p>
+<pre class="text"><code>ARP / neighbour tables
+ICMP probes
+SNMP
+LLDP/CDP
+routing information
+DHCP information
+DNS
+traffic observation
+...</code></pre>
+<p>For example, ICMP Echo Requests can also be used to probe IP addresses:</p>
+<pre class="text"><code>Manager                           Device
+
+   │── ICMP Echo Request ────────&gt;│
+   │&lt;── ICMP Echo Reply ──────────│</code></pre>
+<p>However:</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>No response to an ICMP Echo Request does <strong>not</strong> necessarily mean that no device exists at that address.</p>
+<p>ICMP may be filtered while other protocols, including SNMP, remain reachable.</p>
+</div>
+</div>
+<p>For this lab, <strong>ARP will be used for initial discovery</strong> because the devices being discovered are on the local laboratory network.</p>
+</section>
+<section id="from-a-host-to-a-managed-device" class="level2" data-number="11.4">
+<h2 data-number="11.4" class="anchored" data-anchor-id="from-a-host-to-a-managed-device"><span class="header-section-number">11.4</span> From a Host to a Managed Device</h2>
+<p>Finding an IP address does not tell us whether the device can be managed using SNMP.</p>
+<p>For every host discovered using ARP, send an SNMPv2c GET request for:</p>
+<pre class="text"><code>sysName.0</code></pre>
+<p>using the community:</p>
+<pre class="text"><code>public</code></pre>
+<p>If the device provides a valid SNMP response, classify it as an <strong>SNMP-enabled device</strong>.</p>
+<p>Your inventory should now distinguish:</p>
+<pre class="text"><code>IP ADDRESS          MAC ADDRESS          SNMP
+192.168.153.1       48:a9:8a:...         yes
+192.168.153.4       02:42:ac:...         no
+192.168.153.17      bc:24:11:...         yes</code></pre>
+<div class="callout-question">
+<p>A host was discovered using ARP but does not answer the SNMP request.</p>
+<p>Can you conclude that the device does not support SNMP?</p>
+<p>What other explanations are possible?</p>
+</div>
+</section>
+<section id="identifying-snmp-devices" class="level2" data-number="11.5">
+<h2 data-number="11.5" class="anchored" data-anchor-id="identifying-snmp-devices"><span class="header-section-number">11.5</span> Identifying SNMP Devices</h2>
+<p>For each device that responds to SNMP, retrieve:</p>
+<pre class="text"><code>sysName.0
+sysDescr.0
+sysObjectID.0</code></pre>
+<p>Extend the inventory:</p>
+<pre class="text"><code>192.168.153.1
+    MAC:          48:a9:8a:...
+    SNMP:         yes
+    Name:         router01
+    Description:  RouterOS ...
+    Object ID:    1.3.6.1.4.1....
+
+192.168.153.4
+    MAC:          02:42:ac:...
+    SNMP:         no</code></pre>
+<p>The three SNMP objects provide different information:</p>
+<ul>
+<li><code>sysName</code> provides the configured name of the device;</li>
+<li><code>sysDescr</code> provides a textual description of the system;</li>
+<li><code>sysObjectID</code> identifies the type of device according to the vendor’s object hierarchy.</li>
+</ul>
+<div class="callout-question">
+<p>Which of these objects would be the most appropriate for software that needs to automatically determine what type of device it has discovered?</p>
+<p>Why is parsing <code>sysDescr</code> text generally less robust?</p>
+</div>
+</section>
+<section id="enterprise-oids" class="level2" data-number="11.6">
+<h2 data-number="11.6" class="anchored" data-anchor-id="enterprise-oids"><span class="header-section-number">11.6</span> Enterprise OIDs</h2>
+<p>Inspect the <code>sysObjectID</code> returned by your MikroTik.</p>
+<p>Vendor-specific objects are located below:</p>
+<pre class="text"><code>1.3.6.1.4.1</code></pre>
+<p>This part of the OID tree is known as:</p>
+<pre class="text"><code>private.enterprises</code></pre>
+<p>Each registered organization receives an <strong>enterprise number</strong>.</p>
+<p>Conceptually:</p>
+<pre class="text"><code>1.3.6.1.4.1
+      │
+      └── enterprises
+             │
+             ├── vendor A
+             ├── vendor B
+             ├── vendor C
+             │      │
+             │      └── products...
+             └── ...</code></pre>
+<p>Identify the enterprise number contained in the <code>sysObjectID</code> returned by your MikroTik.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This is one of the mechanisms that a network management platform can use after discovery to decide which vendor-specific MIBs, monitoring templates, or collection rules should be applied to a device.</p>
+</div>
+</div>
+</section>
+<section id="why-sequential-discovery-does-not-scale" class="level2" data-number="11.7">
+<h2 data-number="11.7" class="anchored" data-anchor-id="why-sequential-discovery-does-not-scale"><span class="header-section-number">11.7</span> Why Sequential Discovery Does Not Scale</h2>
+<p>Suppose several devices have been discovered:</p>
+<pre class="text"><code>192.168.153.1
+192.168.153.2
+192.168.153.3
+...</code></pre>
+<p>A sequential SNMP probe behaves approximately as:</p>
+<pre class="text"><code>Device 1: request ───── wait ───── response
+                                     │
+Device 2:                            request ───── wait ───── response
+                                                                  │
+Device 3:                                                         ...</code></pre>
+<p>This becomes particularly inefficient when a device does <strong>not</strong> respond.</p>
+<p>The manager must wait for the SNMP timeout before moving to the next device.</p>
+<div class="callout-question">
+<p>Assume an SNMP timeout of 1 second.</p>
+<p>Approximately how long could a sequential scan of 100 addresses take if none of them responds?</p>
+<p>What happens if those requests can be performed concurrently?</p>
+</div>
+</section>
+<section id="concurrent-snmp-discovery" class="level2" data-number="11.8">
+<h2 data-number="11.8" class="anchored" data-anchor-id="concurrent-snmp-discovery"><span class="header-section-number">11.8</span> Concurrent SNMP Discovery</h2>
+<p>Modify the SNMP phase of <code>discover.py</code> to probe discovered hosts concurrently using <code>asyncio</code>.</p>
+<p>Conceptually:</p>
+<div class="sourceCode" id="cb113"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> <span class="cf">await</span> asyncio.gather(</span>
+<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a>    probe_snmp(<span class="st">"192.168.153.1"</span>),</span>
+<span id="cb113-3"><a href="#cb113-3" aria-hidden="true" tabindex="-1"></a>    probe_snmp(<span class="st">"192.168.153.2"</span>),</span>
+<span id="cb113-4"><a href="#cb113-4" aria-hidden="true" tabindex="-1"></a>    probe_snmp(<span class="st">"192.168.153.3"</span>),</span>
+<span id="cb113-5"><a href="#cb113-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ...</span></span>
+<span id="cb113-6"><a href="#cb113-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The discovery process now becomes:</p>
+<pre class="text"><code>ARP discovery
+     │
+     ▼
+┌───────────────────────────────────┐
+│  IP1   IP2   IP3   IP4   IP5 ... │
+└───┬─────┬─────┬─────┬─────┬─────┘
+    │     │     │     │     │
+    └─────┴── concurrent SNMP ──────┘
+                  │
+                  ▼
+           SNMP responders
+                  │
+                  ▼
+          Device information</code></pre>
+<p>Measure the time required for:</p>
+<ol type="1">
+<li>sequential SNMP probing;</li>
+<li>concurrent SNMP probing.</li>
+</ol>
+<p>Compare the results.</p>
+<div class="callout-question">
+<p>Why is concurrency particularly valuable when some devices do not respond?</p>
+<p>Does concurrent discovery generate less network traffic than sequential discovery?</p>
+<p>What resource or network problems could arise if a management platform started tens of thousands of discovery requests simultaneously?</p>
+</div>
+</section>
+<section id="building-the-device-inventory" class="level2" data-number="11.9">
+<h2 data-number="11.9" class="anchored" data-anchor-id="building-the-device-inventory"><span class="header-section-number">11.9</span> Building the Device Inventory</h2>
+<p>Your final <code>discover.py</code> program should automatically:</p>
+<ol type="1">
+<li>discover active devices on the local network;</li>
+<li>obtain their IP and MAC addresses;</li>
+<li>determine which devices respond to SNMP;</li>
+<li>retrieve <code>sysName</code>, <code>sysDescr</code>, and <code>sysObjectID</code> from SNMP-enabled devices;</li>
+<li>display the resulting inventory.</li>
+</ol>
+<p>A possible result is:</p>
+<pre class="text"><code>Network discovery: 192.168.153.0/24
+
+Discovered: 6 devices
+SNMP-enabled: 2 devices
+
+IP ADDRESS       MAC ADDRESS        SNMP   NAME        DESCRIPTION
+192.168.153.1    48:a9:8a:...       yes    router01    RouterOS ...
+192.168.153.4    02:42:ac:...       no     -           -
+192.168.153.8    bc:24:11:...       yes    switch01    ...
+...</code></pre>
+<p>You have now implemented a simplified version of an important function provided by many network management platforms:</p>
+<pre class="text"><code>DISCOVERY
+    ↓
+IDENTIFICATION
+    ↓
+INVENTORY
+    ↓
+MONITORING</code></pre>
+<p>The next step after discovering and identifying a device would be to determine <strong>what should be monitored on that device</strong>.</p>
+</section>
+</section>
+<section id="modifying-managed-objects-snmp-set" class="level1" data-number="12">
+<h1 data-number="12"><span class="header-section-number">12</span> Modifying Managed Objects: SNMP SET</h1>
+<p>Until now, all our SNMP operations have been <strong>read operations</strong>:</p>
+<pre class="text"><code>GET / GETNEXT / WALK
+        │
+        ▼
+Manager reads information from the agent</code></pre>
+<p>SNMP can also modify managed objects using the <strong>SET</strong> operation:</p>
+<pre class="text"><code>Manager                         Agent
+   │                              │
+   │──── SET request ────────────&gt;│
+   │                              │
+   │&lt;─── RESPONSE ────────────────│
+   │                              │</code></pre>
+<p>However, only objects defined as writable in their MIB can be modified.</p>
+<section id="read-and-write-access" class="level2" data-number="12.1">
+<h2 data-number="12.1" class="anchored" data-anchor-id="read-and-write-access"><span class="header-section-number">12.1</span> Read and Write Access</h2>
+<p>For the previous exercises, the MikroTik SNMP agent was configured with a read-only community:</p>
+<pre class="text"><code>public</code></pre>
+<p>This is sufficient for monitoring, but it should not allow configuration changes.</p>
+<p>Try to modify <code>sysLocation.0</code> using the read-only community.</p>
+<p>For example, with the Net-SNMP command-line tools:</p>
+<div class="sourceCode" id="cb120"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb120-1"><a href="#cb120-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpset</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb120-2"><a href="#cb120-2" aria-hidden="true" tabindex="-1"></a>  1.3.6.1.2.1.1.6.0 s <span class="st">"Network Management Lab"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Here:</p>
+<pre class="text"><code>1.3.6.1.2.1.1.6.0    → sysLocation.0
+s                      → OCTET STRING
+"Network Management Lab" → new value</code></pre>
+<p>Observe the result.</p>
+<div class="callout-question">
+<p>Was the operation accepted?</p>
+<p>Why should a community used by a monitoring system normally have read-only access?</p>
+</div>
+</section>
+<section id="enabling-write-access" class="level2" data-number="12.2">
+<h2 data-number="12.2" class="anchored" data-anchor-id="enabling-write-access"><span class="header-section-number">12.2</span> Enabling Write Access</h2>
+<p>Configure a <strong>separate SNMP community</strong> on the MikroTik with write access.</p>
+<p>Do not modify the read-only <code>public</code> community.</p>
+<p>Use the write community only for this part of the lab.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A read-write SNMP community provides the ability to modify writable managed objects on the device.</p>
+<p>It should therefore not be used for routine monitoring.</p>
+</div>
+</div>
+<p>Repeat the SET operation using the write community.</p>
+<p>Then verify the result independently with a GET:</p>
+<div class="sourceCode" id="cb122"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpget</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb122-2"><a href="#cb122-2" aria-hidden="true" tabindex="-1"></a>  1.3.6.1.2.1.1.6.0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The complete operation is therefore:</p>
+<pre class="text"><code>       write community                 read community
+
+Manager ─────── SET ───────► Agent ◄────── GET ─────── Manager
+              │                │
+              │                ▼
+              │          sysLocation.0
+              │                │
+              └── changes ─────┘</code></pre>
+<div class="callout-question">
+<p>Why is it useful to verify the result using a separate GET rather than assuming that the configuration has changed because a SET request was sent?</p>
+</div>
+</section>
+<section id="performing-a-set-with-pysnmp" class="level2" data-number="12.3">
+<h2 data-number="12.3" class="anchored" data-anchor-id="performing-a-set-with-pysnmp"><span class="header-section-number">12.3</span> Performing a SET with PySNMP</h2>
+<p>Create:</p>
+<pre class="text"><code>set_location.py</code></pre>
+<p>The program must receive a new location as an argument:</p>
+<div class="sourceCode" id="cb125"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> set_location.py <span class="st">"Lab 1 - EINA"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>and modify:</p>
+<pre class="text"><code>sysLocation.0</code></pre>
+<p>using SNMP.</p>
+<p>After performing the SET, retrieve the object again and display its new value.</p>
+<p>Your program should produce output similar to:</p>
+<pre class="text"><code>Previous location: ...
+Setting location...
+New location: Lab 1 - EINA</code></pre>
+<div class="callout-question">
+<p>Compare GET and SET in your Python programs.</p>
+<p>Which elements are common to both operations?</p>
+<p>What changes?</p>
+</div>
+</section>
+<section id="inspecting-an-snmp-set" class="level2" data-number="12.4">
+<h2 data-number="12.4" class="anchored" data-anchor-id="inspecting-an-snmp-set"><span class="header-section-number">12.4</span> Inspecting an SNMP SET</h2>
+<p>Capture one successful SET operation.</p>
+<p>Identify:</p>
+<ul>
+<li>the SNMP version;</li>
+<li>the community;</li>
+<li>the PDU type;</li>
+<li>the OID being modified;</li>
+<li>the new value;</li>
+<li>the agent response.</li>
+</ul>
+<p>Pay particular attention to the community string.</p>
+<div class="callout callout-style-default callout-warning callout-titled" title="A Security Problem">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+A Security Problem
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In SNMPv1 and SNMPv2c, the community string is transmitted without encryption.</p>
+<p>Anyone able to capture the traffic may be able to obtain the community used for the SET operation.</p>
+<p>A captured read-write community is particularly dangerous because it may allow an attacker to modify the device configuration.</p>
+</div>
+</div>
+<div class="callout-question">
+<p>Compare the packet capture of your earlier SNMP GET using <code>public</code> with this SET operation.</p>
+<p>Can you identify both community strings in the captured packets?</p>
+<p>Would you consider SNMPv2c appropriate for management traffic crossing an untrusted network?</p>
+</div>
+</section>
+<section id="monitoring-vs-configuration" class="level2" data-number="12.5">
+<h2 data-number="12.5" class="anchored" data-anchor-id="monitoring-vs-configuration"><span class="header-section-number">12.5</span> Monitoring vs Configuration</h2>
+<p>SNMP can therefore be used for both:</p>
+<pre class="text"><code>                  SNMP
+                   │
+          ┌────────┴────────┐
+          ▼                 ▼
+        READ              WRITE
+          │                 │
+   GET / GETNEXT           SET
+   GETBULK / WALK           │
+          │                 ▼
+          ▼             Configuration
+      Monitoring
+      Telemetry</code></pre>
+<p>In this course, our main use of SNMP will be <strong>monitoring and telemetry</strong>.</p>
+<p>Modern network automation frequently uses other mechanisms for configuration, while SNMP remains widely used for retrieving operational state and metrics.</p>
+<p>Nevertheless, understanding SET is important because it demonstrates that the SNMP management model was designed for both <strong>monitoring and control</strong>.</p>
+</section>
+</section>
+<section id="securing-snmp-snmpv3" class="level1" data-number="13">
+<h1 data-number="13"><span class="header-section-number">13</span> Securing SNMP: SNMPv3</h1>
+<p>In the previous section, you captured an SNMPv2c SET operation.</p>
+<p>The packet contained not only the object being modified and its new value, but also the <strong>community string</strong> used to authorize the operation.</p>
+<p>This creates an obvious security problem.</p>
+<blockquote class="blockquote">
+<p>If someone can capture the credential that allows us to modify the router, how can SNMP be used securely?</p>
+</blockquote>
+<section id="the-problem-with-community-based-snmp" class="level2" data-number="13.1">
+<h2 data-number="13.1" class="anchored" data-anchor-id="the-problem-with-community-based-snmp"><span class="header-section-number">13.1</span> The Problem with Community-Based SNMP</h2>
+<p>SNMPv1 and SNMPv2c use a <strong>community string</strong> as a simple access-control mechanism.</p>
+<p>Conceptually:</p>
+<pre class="text"><code>             "public"
+Manager ─────────────────► Agent
+             GET
+
+          "write-community"
+Manager ─────────────────► Agent
+             SET</code></pre>
+<p>The community identifies the access rights associated with the request.</p>
+<p>However, the community itself is transmitted without encryption.</p>
+<p>As you observed in the packet capture:</p>
+<pre class="text"><code>Network observer
+       │
+       ▼
+┌──────────────────────────┐
+│ SNMPv2c packet           │
+│                          │
+│ Community: public        │
+│ PDU: GET                 │
+│ OID: ...                 │
+└──────────────────────────┘</code></pre>
+<p>and, even more critically:</p>
+<pre class="text"><code>┌──────────────────────────┐
+│ SNMPv2c packet           │
+│                          │
+│ Community: ********      │
+│ PDU: SET                 │
+│ OID: sysLocation.0       │
+│ Value: ...               │
+└──────────────────────────┘</code></pre>
+<div class="callout-question">
+<p>What could an attacker do after capturing a valid read-write community?</p>
+<p>Would choosing a very long and random community string solve the packet-capture problem? Why?</p>
+</div>
+</section>
+</section>
+<section id="snmpv3-security-model" class="level1" data-number="14">
+<h1 data-number="14"><span class="header-section-number">14</span> SNMPv3 Security Model</h1>
+<p>SNMPv3 introduces a different security model.</p>
+<p>Instead of identifying access using only a community string, SNMPv3 can provide:</p>
+<ul>
+<li><strong>authentication</strong> — verify who sent the message;</li>
+<li><strong>integrity</strong> — detect whether the message was modified;</li>
+<li><strong>privacy</strong> — encrypt the protected part of the SNMP message.</li>
+</ul>
+<p>SNMPv3 defines three commonly used security levels:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Security level</th>
+<th style="text-align: center;">Authentication</th>
+<th style="text-align: center;">Encryption</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>noAuthNoPriv</code></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
+</tr>
+<tr class="even">
+<td><code>authNoPriv</code></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+</tr>
+<tr class="odd">
+<td><code>authPriv</code></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+</tr>
+</tbody>
+</table>
+<p>The names can be read as:</p>
+<pre class="text"><code>noAuthNoPriv
+   │      │
+   │      └── no privacy
+   └───────── no authentication
+
+
+authNoPriv
+ │     │
+ │     └───── no privacy
+ └─────────── authentication
+
+
+authPriv
+ │   │
+ │   └─────── privacy
+ └─────────── authentication</code></pre>
+<div class="callout-question">
+<p>Which security level would you choose for management traffic crossing an untrusted network?</p>
+<p>What information is still potentially visible when using <code>authNoPriv</code>?</p>
+</div>
+<section id="configuring-an-snmpv3-user" class="level2" data-number="14.1">
+<h2 data-number="14.1" class="anchored" data-anchor-id="configuring-an-snmpv3-user"><span class="header-section-number">14.1</span> Configuring an SNMPv3 User</h2>
+<p>Configure an SNMPv3 user on your MikroTik for this experiment.</p>
+<p>Use:</p>
+<pre class="text"><code>Security level: authPriv</code></pre>
+<p>and the authentication and privacy credentials assigned for your laboratory environment.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Do not reuse personal passwords.</p>
+<p>The credentials used in this exercise are laboratory credentials and should only be used inside the CyberRange.</p>
+</div>
+</div>
+<p>Your configuration requires several pieces of information:</p>
+<pre class="text"><code>SNMPv3 user
+    │
+    ├── username
+    │
+    ├── authentication protocol
+    │       └── authentication password
+    │
+    └── privacy protocol
+            └── privacy password</code></pre>
+<p>Verify that SNMPv3 access is enabled before continuing.</p>
+</section>
+<section id="your-first-snmpv3-get" class="level2" data-number="14.2">
+<h2 data-number="14.2" class="anchored" data-anchor-id="your-first-snmpv3-get"><span class="header-section-number">14.2</span> Your First SNMPv3 GET</h2>
+<p>Use the Net-SNMP command-line tools to retrieve:</p>
+<pre class="text"><code>sysUpTime.0</code></pre>
+<p>using SNMPv3 with authentication and privacy.</p>
+<p>The command has the following general structure:</p>
+<div class="sourceCode" id="cb136"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpget</span> <span class="at">-v3</span> <span class="dt">\</span></span>
+<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-l</span> authPriv <span class="dt">\</span></span>
+<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-u</span> <span class="op">&lt;</span>USERNAME<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> <span class="op">&lt;</span>AUTH_PROTOCOL<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb136-5"><a href="#cb136-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-A</span> <span class="st">'&lt;AUTH_PASSWORD&gt;'</span> <span class="dt">\</span></span>
+<span id="cb136-6"><a href="#cb136-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-x</span> <span class="op">&lt;</span>PRIV_PROTOCOL<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb136-7"><a href="#cb136-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-X</span> <span class="st">'&lt;PRIV_PASSWORD&gt;'</span> <span class="dt">\</span></span>
+<span id="cb136-8"><a href="#cb136-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb136-9"><a href="#cb136-9" aria-hidden="true" tabindex="-1"></a>  1.3.6.1.2.1.1.3.0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>where:</p>
+<pre class="text"><code>-v3   SNMP version 3
+-l    security level
+-u    username
+-a    authentication protocol
+-A    authentication password
+-x    privacy protocol
+-X    privacy password</code></pre>
+<div class="callout-question">
+<p>Compare this command with the SNMPv2c equivalent:</p>
+<div class="sourceCode" id="cb138"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a><span class="ex">snmpget</span> <span class="at">-v2c</span> <span class="at">-c</span> public <span class="op">&lt;</span>MIKROTIK_IP<span class="op">&gt;</span> 1.3.6.1.2.1.1.3.0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>What information has replaced the community string?</p>
+</div>
+</section>
+<section id="inspecting-snmpv3-on-the-network" class="level2" data-number="14.3">
+<h2 data-number="14.3" class="anchored" data-anchor-id="inspecting-snmpv3-on-the-network"><span class="header-section-number">14.3</span> Inspecting SNMPv3 on the Network</h2>
+<p>Capture the SNMPv3 GET request and its response.</p>
+<p>Compare them with the SNMPv2c GET captured earlier.</p>
+<p>Try to identify:</p>
+<ul>
+<li>the SNMP version;</li>
+<li>the SNMPv3 username;</li>
+<li>the authentication-related information;</li>
+<li>the encrypted portion of the message.</li>
+</ul>
+<p>Then try to locate:</p>
+<pre class="text"><code>sysUpTime.0</code></pre>
+<p>and its returned value in the packet capture.</p>
+<div class="callout-question">
+<p>Can you read the requested OID as easily as you could with SNMPv2c?</p>
+<p>Can you read the returned value?</p>
+<p>Can you find the authentication password in the packet?</p>
+<p>Can you find the privacy password?</p>
+<p>Can you find the SNMPv3 username?</p>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Encryption does not mean that the complete network packet becomes invisible.</p>
+<p>An observer can still see information required to transport and process the packet, such as IP addresses, UDP ports and some SNMPv3 metadata.</p>
+<p>With <code>authPriv</code>, however, the protected SNMP scoped PDU is encrypted.</p>
+</div>
+</div>
+</section>
+<section id="snmpv3-with-pysnmp" class="level2" data-number="14.4">
+<h2 data-number="14.4" class="anchored" data-anchor-id="snmpv3-with-pysnmp"><span class="header-section-number">14.4</span> SNMPv3 with PySNMP</h2>
+<p>Create:</p>
+<pre class="text"><code>get_v3.py</code></pre>
+<p>Modify one of your previous GET programs so that it retrieves:</p>
+<pre class="text"><code>sysUpTime.0</code></pre>
+<p>using SNMPv3 with <code>authPriv</code>.</p>
+<p>In PySNMP, SNMPv3 user-based security is configured using <code>UsmUserData</code> instead of <code>CommunityData</code>.</p>
+<p>Conceptually:</p>
+<div class="sourceCode" id="cb142"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb142-1"><a href="#cb142-1" aria-hidden="true" tabindex="-1"></a>CommunityData(...)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>becomes:</p>
+<div class="sourceCode" id="cb143"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb143-1"><a href="#cb143-1" aria-hidden="true" tabindex="-1"></a>UsmUserData(</span>
+<span id="cb143-2"><a href="#cb143-2" aria-hidden="true" tabindex="-1"></a>    username,</span>
+<span id="cb143-3"><a href="#cb143-3" aria-hidden="true" tabindex="-1"></a>    authKey<span class="op">=</span>...,</span>
+<span id="cb143-4"><a href="#cb143-4" aria-hidden="true" tabindex="-1"></a>    privKey<span class="op">=</span>...,</span>
+<span id="cb143-5"><a href="#cb143-5" aria-hidden="true" tabindex="-1"></a>    authProtocol<span class="op">=</span>...,</span>
+<span id="cb143-6"><a href="#cb143-6" aria-hidden="true" tabindex="-1"></a>    privProtocol<span class="op">=</span>...</span>
+<span id="cb143-7"><a href="#cb143-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Use the authentication and privacy protocols configured on your MikroTik.</p>
+<div class="callout-question">
+<p>Look at the rest of your previous PySNMP GET program.</p>
+<p>Apart from the security configuration, how much of the SNMP operation has changed?</p>
+<p>What does this tell you about the separation between:</p>
+<pre class="text"><code>what we want to retrieve</code></pre>
+<p>and:</p>
+<pre class="text"><code>how the SNMP communication is secured</code></pre>
+</div>
+</section>
+</section>
+<section id="comparing-snmpv2c-and-snmpv3" class="level1" data-number="15">
+<h1 data-number="15"><span class="header-section-number">15</span> Comparing SNMPv2c and SNMPv3</h1>
+<p>You have now retrieved the same managed object using both SNMPv2c and SNMPv3.</p>
+<p>Complete the following comparison:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th>SNMPv2c</th>
+<th>SNMPv3 <code>authPriv</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Identity/access mechanism</td>
+<td>Community</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Authentication</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Message integrity</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Encryption/privacy</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Credential visible in capture</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>OID/value readable in capture</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="callout-question">
+<p>If you were deploying a new network monitoring system today, which version would you choose when the devices support it?</p>
+<p>Why might SNMPv2c nevertheless still be encountered in real networks?</p>
+</div>
+</section>
+<section id="what-have-we-built" class="level1" data-number="16">
+<h1 data-number="16"><span class="header-section-number">16</span> What Have We Built?</h1>
+<p>At the beginning of this lab, we had only:</p>
+<pre class="text"><code>Linux container + MikroTik</code></pre>
+<p>You have progressively implemented the basic functions of a network management system:</p>
+<pre class="text"><code>                    NETWORK
+                       │
+                       ▼
+                 ┌───────────┐
+                 │ DISCOVER  │
+                 └─────┬─────┘
+                       │
+                       ▼
+                 ┌───────────┐
+                 │ IDENTIFY  │
+                 └─────┬─────┘
+                       │
+                       ▼
+                 ┌───────────┐
+                 │  INSPECT  │
+                 │ MIB/OIDs  │
+                 └─────┬─────┘
+                       │
+                       ▼
+                 ┌───────────┐
+                 │  MONITOR  │
+                 │ counters  │
+                 └─────┬─────┘
+                       │
+                       ▼
+                 ┌───────────┐
+                 │  DERIVE   │
+                 │  metrics  │
+                 └─────┬─────┘
+                       │
+                       ▼
+                 ┌───────────┐
+                 │   ACT     │
+                 │   SET     │
+                 └─────┬─────┘
+                       │
+                       ▼
+                 ┌───────────┐
+                 │  SECURE   │
+                 │  SNMPv3   │
+                 └───────────┘</code></pre>
+<p>These operations are small-scale examples of functions performed by real network management and observability platforms.</p>
+<p>The tools will change during the course, but many of the underlying engineering problems remain the same:</p>
+<pre class="text"><code>How do I discover what exists?
+
+How do I identify it?
+
+What information can I collect?
+
+How often should I collect it?
+
+How do I transform raw measurements into useful metrics?
+
+How do I perform management operations safely?
+
+How does this scale to many devices?</code></pre>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
