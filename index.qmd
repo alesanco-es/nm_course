@@ -1,0 +1,7 @@
+---
+title: "Network Management — Labs"
+---
+
+Welcome to the lab materials for this course.
+
+- [Lab 1: SNMP and Python](L1.SNMP.qmd)

@@ -1,0 +1,18 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Network Management — UNIZAR"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: L1.SNMP.qmd
+        text: "Lab 1: SNMP"
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    number-sections: true

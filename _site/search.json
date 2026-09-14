@@ -1,0 +1,359 @@
+[
+  {
+    "objectID": "L1.SNMP.html",
+    "href": "L1.SNMP.html",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "",
+    "text": "SNMP (Simple Network Management Protocol) remains one of the most widely used mechanisms for retrieving status and operational information from network devices.\nIn this lab, we will use a MikroTik router as the managed device and Python to develop simple network management and monitoring tools.\nThe lab follows a progression similar to that used by real network management platforms:\n\nDiscover which devices are present in the network.\nIdentify which devices can be managed using SNMP.\nInspect the information exposed by those devices.\nExplore their interfaces and other objects available through their MIBs.\nMonitor how selected network parameters evolve over time.\n\nThroughout the lab, you will work directly from a Linux system and use both command-line tools and Python scripts."
+  },
+  {
+    "objectID": "L1.SNMP.html#accessing-the-debian-container",
+    "href": "L1.SNMP.html#accessing-the-debian-container",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "4.1 Accessing the Debian Container",
+    "text": "4.1 Accessing the Debian Container\nConnect to your Debian container (d13-basic-153) through the CyberRange and open a terminal.\nCheck the operating system and the installed Python version:\ncat /etc/os-release\npython3 --version\nThroughout this lab, the Debian container will act as the SNMP manager, while the MikroTik router will act as the SNMP agent.\n\n\n\n\n\n\nManager and agent\n\n\n\nAn SNMP manager sends requests to managed devices and processes their responses.\nAn SNMP agent runs on the managed device and provides access to the management information exposed by that device."
+  },
+  {
+    "objectID": "L1.SNMP.html#installing-snmp-command-line-tools",
+    "href": "L1.SNMP.html#installing-snmp-command-line-tools",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "4.2 Installing SNMP Command-Line Tools",
+    "text": "4.2 Installing SNMP Command-Line Tools\nBefore writing Python programs, we will verify SNMP communication using standard Linux command-line tools.\nUpdate the package information and install the SNMP utilities:\nsudo apt update\nsudo apt install snmp\nCheck that the tools are available:\nsnmpget --version\nSome of the commands that we will use during this lab are:\n\n\n\nCommand\nPurpose\n\n\n\n\nsnmpget\nRetrieve one or more specific objects\n\n\nsnmpgetnext\nRetrieve the next object in the MIB tree\n\n\nsnmpwalk\nTraverse a subtree of the MIB\n\n\nsnmpset\nModify a writable object\n\n\n\nDo not worry about their complete syntax yet. We will introduce each command when it is needed."
+  },
+  {
+    "objectID": "L1.SNMP.html#creating-a-python-virtual-environment",
+    "href": "L1.SNMP.html#creating-a-python-virtual-environment",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "4.3 Creating a Python Virtual Environment",
+    "text": "4.3 Creating a Python Virtual Environment\nPython projects commonly use virtual environments to keep their dependencies isolated from the operating system and from other projects.\nInstall the required package if it is not already available:\nsudo apt install python3-venv\nCreate a directory for the lab:\nmkdir ~/p1-snmp\ncd ~/p1-snmp\nCreate a virtual environment:\npython3 -m venv .venv\nActivate it:\nsource .venv/bin/activate\nYour shell prompt should now indicate that the virtual environment is active.\n\n\n\n\n\n\nTip\n\n\n\nWhenever you start a new terminal and return to this lab, activate the environment again:\ncd ~/p1-snmp\nsource .venv/bin/activate"
+  },
+  {
+    "objectID": "L1.SNMP.html#installing-pysnmp",
+    "href": "L1.SNMP.html#installing-pysnmp",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "4.4 Installing PySNMP",
+    "text": "4.4 Installing PySNMP\nWith the virtual environment activated, install PySNMP:\npip install pysnmp\nVerify the installation:\npython3 -c \"import pysnmp; print(pysnmp.__version__)\"\nCreate a file named test.py:\nimport pysnmp\n\nprint(\"PySNMP version:\", pysnmp.__version__)\nRun it:\npython3 test.py\nIf the version is displayed without errors, your Python environment is ready."
+  },
+  {
+    "objectID": "L1.SNMP.html#checking-network-connectivity",
+    "href": "L1.SNMP.html#checking-network-connectivity",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "4.5 Checking Network Connectivity",
+    "text": "4.5 Checking Network Connectivity\nBefore using SNMP, verify that the MikroTik router is reachable from your Debian container.\nping -c 3 &lt;MIKROTIK_IP&gt;\nReplace &lt;MIKROTIK_IP&gt; with the IP address assigned to the MikroTik router in your laboratory environment.\n\n\n\n\n\n\nImportant\n\n\n\nBeing able to reach a device using ICMP does not imply that the device supports SNMP. Similarly, a device that does not reply to ICMP Echo Requests could still provide other network services.\nWe will revisit this distinction when implementing automatic device discovery.\n\n\nAt this point, your environment should contain:\nDebian CT\n│\n├── Linux SNMP tools\n│   ├── snmpget\n│   ├── snmpgetnext\n│   ├── snmpwalk\n│   └── snmpset\n│\n└── ~/p1-snmp/\n    ├── .venv/\n    └── test.py\nYou are now ready to communicate with the MikroTik SNMP agent."
+  },
+  {
+    "objectID": "L1.SNMP.html#configuring-the-mikrotik-snmp-agent",
+    "href": "L1.SNMP.html#configuring-the-mikrotik-snmp-agent",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "5.1 Configuring the MikroTik SNMP Agent",
+    "text": "5.1 Configuring the MikroTik SNMP Agent\nConnect to your MikroTik router and verify the SNMP configuration.\nEnable the SNMP agent if necessary and configure the following community:\n\n\n\nParameter\nValue\n\n\n\n\nSNMP version\nSNMPv2c\n\n\nCommunity\npublic\n\n\nAccess\nRead-only\n\n\n\n\n\n\n\n\n\nWarning\n\n\n\nSNMPv1 and SNMPv2c communities are transmitted without encryption and should not be considered secure authentication mechanisms.\nWe use SNMPv2c here because it allows us to focus first on the SNMP data model and protocol operations. SNMPv3 will be introduced later in the lab."
+  },
+  {
+    "objectID": "L1.SNMP.html#your-first-snmp-get",
+    "href": "L1.SNMP.html#your-first-snmp-get",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "5.2 Your First SNMP GET",
+    "text": "5.2 Your First SNMP GET\nLet’s retrieve sysDescr.0 from the MikroTik.\nsysDescr belongs to the system group of MIB-II and contains a textual description of the managed device.\nIts numeric OID is:\n1.3.6.1.2.1.1.1.0\nFrom the Debian container, execute:\nsnmpget -v2c -c public &lt;MIKROTIK_IP&gt; 1.3.6.1.2.1.1.1.0\nYou should obtain a response similar to:\niso.3.6.1.2.1.1.1.0 = STRING: ...\nThe exact value depends on your MikroTik router.\nNotice that the result contains three different pieces of information:\n1.3.6.1.2.1.1.1.0  =  STRING  :  value\n        │                  │         │\n        │                  │         └── Object value\n        │                  │\n        │                  └──────────── ASN.1 data type\n        │\n        └─────────────────────────────── Object identifier\nThis (OID, value) association is the basic information carried by an SNMP VarBind.\n\n\n\n\n\n\nWhy does the OID end in .0?\n\n\n\nsysDescr is a scalar object.\nSNMP identifies an instance of a scalar object by appending .0 to the object OID. Therefore, a GET request must use the complete instance OID:\nsysDescr.0\nLater, when working with tables, the suffix will have a different meaning: it will identify a particular row of the table."
+  },
+  {
+    "objectID": "L1.SNMP.html#exploring-the-system-group",
+    "href": "L1.SNMP.html#exploring-the-system-group",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "5.3 Exploring the system Group",
+    "text": "5.3 Exploring the system Group\nThe system group is located below:\n1.3.6.1.2.1.1\nUse snmpwalk to retrieve the objects available below this OID:\nsnmpwalk -v2c -c public &lt;MIKROTIK_IP&gt; 1.3.6.1.2.1.1\nIdentify at least the following objects in the output:\n\n\n\nObject\nInformation\n\n\n\n\nsysDescr\nDevice description\n\n\nsysObjectID\nType of managed device\n\n\nsysUpTime\nTime since the management system was initialized\n\n\nsysContact\nContact information\n\n\nsysName\nDevice name\n\n\nsysLocation\nPhysical/location information\n\n\nsysServices\nServices provided by the device\n\n\n\n\nCompare sysDescr and sysObjectID.\nWhat type of information does each object provide? Why could sysObjectID be particularly useful for an automatic network management system?"
+  },
+  {
+    "objectID": "L1.SNMP.html#looking-at-the-protocol",
+    "href": "L1.SNMP.html#looking-at-the-protocol",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "5.4 Looking at the Protocol",
+    "text": "5.4 Looking at the Protocol\nSo far, the snmpget command has hidden the actual SNMP message exchange.\nCapture the traffic generated by a single GET operation using the packet capture mechanism provided in the laboratory environment.\nStart the capture and execute again:\nsnmpget -v2c -c public &lt;MIKROTIK_IP&gt; 1.3.6.1.2.1.1.1.0\nStop the capture after receiving the response and inspect the SNMP packets.\nYou should find two messages:\nDebian CT                              MikroTik\n(manager)                              (agent)\n\n    │                                     │\n    │ ----------- GET request ----------&gt; │\n    │                                     │\n    │ &lt;---------- RESPONSE -------------- │\n    │                                     │\nInspect the GET request and answer the following questions:\n\nWhich SNMP version is being used?\nCan you find the community string in the packet?\nWhich OID appears in the VarBind?\nWhat value is included in the VarBind of the GET request?\nFind the corresponding VarBind in the response. What has changed?\n\n\n\n\n\n\n\nImportant\n\n\n\nDo not capture and analyse dozens of packets. The objective is to understand one request and its corresponding response.\nYou should be able to relate what you see in the packet capture to the SNMP manager/agent model studied in class."
+  },
+  {
+    "objectID": "L1.SNMP.html#performing-the-same-get-with-python",
+    "href": "L1.SNMP.html#performing-the-same-get-with-python",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "5.5 Performing the Same GET with Python",
+    "text": "5.5 Performing the Same GET with Python\nThe command-line tools are useful for testing and troubleshooting, but our goal is to build network management software.\nCreate a file named:\nget_system.py\nUsing PySNMP, retrieve sysDescr.0 from your MikroTik router.\nYour program should display:\nOID:   ...\nType:  ...\nValue: ...\n\n\n\n\n\n\nTip\n\n\n\nAt this point, focus on understanding the PySNMP operation rather than building a generic SNMP application.\nIdentify in your program:\n\nthe SNMP version;\nthe community;\nthe address of the agent;\nthe requested OID;\nthe returned VarBind.\n\n\n\nOnce the program works, compare its result with the one obtained using snmpget.\nBoth tools are acting as SNMP managers and should retrieve the same managed object from the same agent."
+  },
+  {
+    "objectID": "L1.SNMP.html#a-minimal-pysnmp-example",
+    "href": "L1.SNMP.html#a-minimal-pysnmp-example",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "6.1 A Minimal PySNMP Example",
+    "text": "6.1 A Minimal PySNMP Example\nPySNMP provides an asynchronous API based on Python’s asyncio.\nThe following example retrieves sysUpTime.0 from an SNMP agent:\nimport asyncio\n\nfrom pysnmp.hlapi.v3arch.asyncio import (\n    SnmpEngine,\n    CommunityData,\n    UdpTransportTarget,\n    ContextData,\n    ObjectType,\n    ObjectIdentity,\n    get_cmd,\n)\n\n\nasync def main():\n    target = await UdpTransportTarget.create(\n        (\"&lt;MIKROTIK_IP&gt;\", 161)\n    )\n\n    error_indication, error_status, error_index, var_binds = await get_cmd(\n        SnmpEngine(),\n        CommunityData(\"public\", mpModel=1),\n        target,\n        ContextData(),\n        ObjectType(ObjectIdentity(\"1.3.6.1.2.1.1.3.0\")),\n    )\n\n    if error_indication:\n        print(error_indication)\n    elif error_status:\n        print(\n            f\"{error_status.prettyPrint()} at \"\n            f\"{error_index and var_binds[int(error_index) - 1][0] or '?'}\"\n        )\n    else:\n        for oid, value in var_binds:\n            print(\"OID:  \", oid.prettyPrint())\n            print(\"Type: \", type(value).__name__)\n            print(\"Value:\", value.prettyPrint())\n\n\nasyncio.run(main())\nReplace &lt;MIKROTIK_IP&gt; with the address of your MikroTik router and execute the program.\n\nBefore continuing, identify in the program:\n\nwhere the SNMP agent is specified;\nwhere the UDP port is specified;\nwhere the community is specified;\nwhere SNMPv2c is selected;\nwhere the requested OID is specified;\nwhere the program waits for the SNMP response;\nwhich variable contains the returned VarBinds.\n\nWhy is await appropriate for an operation such as an SNMP request?"
+  },
+  {
+    "objectID": "L1.SNMP.html#retrieving-the-system-objects",
+    "href": "L1.SNMP.html#retrieving-the-system-objects",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "6.2 Retrieving the system Objects",
+    "text": "6.2 Retrieving the system Objects\nCreate a new program named:\nget_system.py\nThe program will retrieve the following objects:\n\n\n\nObject\nOID\n\n\n\n\nsysDescr.0\n1.3.6.1.2.1.1.1.0\n\n\nsysObjectID.0\n1.3.6.1.2.1.1.2.0\n\n\nsysUpTime.0\n1.3.6.1.2.1.1.3.0\n\n\nsysContact.0\n1.3.6.1.2.1.1.4.0\n\n\nsysName.0\n1.3.6.1.2.1.1.5.0\n\n\nsysLocation.0\n1.3.6.1.2.1.1.6.0\n\n\nsysServices.0\n1.3.6.1.2.1.1.7.0\n\n\n\n\n6.2.1 Experiment 1 — One GET per object\nRetrieve the seven objects using seven separate SNMP GET operations.\nFor each returned object, display:\nOID | data type | value\nMeasure the total time required to retrieve all seven objects.\nPython’s time.perf_counter() can be used to measure elapsed time:\nimport time\n\nstart = time.perf_counter()\n\n# Operations to be measured\n\nelapsed = time.perf_counter() - start\nprint(f\"Elapsed time: {elapsed:.4f} s\")\n\n\n\n\n\n\nImportant\n\n\n\nThe seven requests must be performed sequentially in this experiment.\nDo not use asyncio.gather() yet.\n\n\n\n\n6.2.2 Experiment 2 — Several VarBinds in one GET\nModify the program so that all seven objects are requested using a single SNMP GET operation.\nA GET operation can contain several ObjectType arguments:\nawait get_cmd(\n    # ...\n    ObjectType(ObjectIdentity(\"OID_1\")),\n    ObjectType(ObjectIdentity(\"OID_2\")),\n    ObjectType(ObjectIdentity(\"OID_3\")),\n)\nDisplay the returned objects and measure the total execution time again.\nCompare the result with Experiment 1.\n\nAnswer the following:\n\nHow many SNMP request messages are generated in Experiment 1?\nHow many are generated in Experiment 2?\nHow many SNMP response messages are generated in each case?\nWhich approach is faster in your experiment?\nWhy?\nIs requesting an arbitrarily large number of objects in a single GET always a good idea?"
+  },
+  {
+    "objectID": "L1.SNMP.html#verifying-the-difference-on-the-network",
+    "href": "L1.SNMP.html#verifying-the-difference-on-the-network",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "6.3 Verifying the Difference on the Network",
+    "text": "6.3 Verifying the Difference on the Network\nUse a packet capture to repeat Experiments 1 and 2.\nYou do not need to analyse every packet in detail. Instead, verify the number of SNMP requests and responses generated in each experiment.\nYou should observe approximately:\nExperiment 1\n\nManager                         Agent\n   │                              │\n   │──── GET sysDescr ───────────&gt;│\n   │&lt;──── RESPONSE ───────────────│\n   │──── GET sysObjectID ────────&gt;│\n   │&lt;──── RESPONSE ───────────────│\n   │──── GET sysUpTime ──────────&gt;│\n   │&lt;──── RESPONSE ───────────────│\n   │             ...              │\n\n\nExperiment 2\n\nManager                         Agent\n   │                              │\n   │──── GET ────────────────────&gt;│\n   │     sysDescr                 │\n   │     sysObjectID              │\n   │     sysUpTime                │\n   │     ...                      │\n   │                              │\n   │&lt;──── RESPONSE ───────────────│\n   │      multiple VarBinds       │\nRelate the packet capture to the execution times measured by your Python program."
+  },
+  {
+    "objectID": "L1.SNMP.html#what-happens-when-an-object-does-not-exist",
+    "href": "L1.SNMP.html#what-happens-when-an-object-does-not-exist",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "6.4 What Happens When an Object Does Not Exist?",
+    "text": "6.4 What Happens When an Object Does Not Exist?\nWe will now examine how SNMP handles errors.\nCreate a GET request containing several valid objects from the system group and one OID that does not exist.\nFor example, you may deliberately modify one of the valid OIDs.\nFirst perform the request using SNMPv1.\nIn PySNMP, SNMPv1 can be selected using:\nCommunityData(\"public\", mpModel=0)\nRecord:\n\nerror_indication;\nerror_status;\nerror_index;\nthe returned VarBinds.\n\nNow repeat exactly the same request using SNMPv2c:\nCommunityData(\"public\", mpModel=1)\nCompare the results.\n\n6.4.1 SNMPv1 vs SNMPv2c\n\nWhat happens to the complete request when one of the requested objects does not exist in SNMPv1?\nCan you determine which VarBind caused the error?\nWhat happens with SNMPv2c?\nAre the valid objects still returned?\nHow is the nonexistent object represented?\n\nExplain why the SNMPv2c behaviour is more useful when a manager requests several objects in a single operation."
+  },
+  {
+    "objectID": "L1.SNMP.html#sequential-requests-vs-concurrent-requests",
+    "href": "L1.SNMP.html#sequential-requests-vs-concurrent-requests",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "6.5 Sequential Requests vs Concurrent Requests",
+    "text": "6.5 Sequential Requests vs Concurrent Requests\nExperiment 1 deliberately performed the seven GET operations sequentially:\nGET 1 → wait → GET 2 → wait → GET 3 → wait → ...\nHowever, SNMP requests are primarily I/O-bound operations: most of the time the program is waiting for network responses.\nCreate a third version in which the seven individual GET operations are started concurrently using asyncio.gather().\nConceptually:\nresults = await asyncio.gather(\n    get_one(OID_1),\n    get_one(OID_2),\n    get_one(OID_3),\n    # ...\n)\nMeasure the execution time.\nYou now have three different strategies:\n\n\n\nStrategy\nSNMP requests\nExecution\n\n\n\n\nIndividual GETs\n7\nSequential\n\n\nMultiple VarBinds\n1\nSingle request\n\n\nIndividual GETs + gather()\n7\nConcurrent\n\n\n\n\nCompare the three measured times.\nWhy can concurrent individual GETs be significantly faster than sequential GETs even though both approaches generate the same number of SNMP messages?\nDoes concurrency eliminate the network overhead of sending multiple SNMP requests?\nWhich of the three approaches would you choose for retrieving several objects from one device? Would your answer necessarily be the same if you were monitoring many different devices?\n\n\n\n\n\n\n\nNote\n\n\n\nThis distinction will become important later in the lab.\nWhen monitoring a single device, grouping several objects into one SNMP request can reduce protocol overhead.\nWhen monitoring many independent devices, asynchronous execution allows the manager to communicate with several agents without waiting for each operation to finish before starting the next one."
+  },
+  {
+    "objectID": "L1.SNMP.html#using-getnext",
+    "href": "L1.SNMP.html#using-getnext",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "7.1 Using GETNEXT",
+    "text": "7.1 Using GETNEXT\nA GETNEXT request does not ask for the value of the specified OID itself. Instead, it asks the agent for the next OID in lexicographical order.\nFor example, consider part of the MIB-II system subtree:\n1.3.6.1.2.1.1\n│\n├── 1.3.6.1.2.1.1.1.0   sysDescr.0\n├── 1.3.6.1.2.1.1.2.0   sysObjectID.0\n├── 1.3.6.1.2.1.1.3.0   sysUpTime.0\n├── 1.3.6.1.2.1.1.4.0   sysContact.0\n├── 1.3.6.1.2.1.1.5.0   sysName.0\n└── ...\nIf the manager asks for the object following:\n1.3.6.1.2.1.1.1.0\nthe agent should return:\n1.3.6.1.2.1.1.2.0\nTry it from the command line:\nsnmpgetnext -v2c -c public &lt;MIKROTIK_IP&gt; 1.3.6.1.2.1.1.1.0\nNow try:\nsnmpgetnext -v2c -c public &lt;MIKROTIK_IP&gt; 1.3.6.1.2.1.1.2.0\nand observe the returned OID.\n\nWhat information must the manager know to perform a GET?\nWhat information must it know to perform a GETNEXT?\nWhy can GETNEXT be useful when the manager does not know the complete contents of a MIB subtree?"
+  },
+  {
+    "objectID": "L1.SNMP.html#building-a-walk-from-getnext",
+    "href": "L1.SNMP.html#building-a-walk-from-getnext",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "7.2 Building a WALK from GETNEXT",
+    "text": "7.2 Building a WALK from GETNEXT\nThere is no WALK PDU in the SNMP protocol.\nAn SNMP walk is obtained by repeatedly asking the agent for the next object:\nstart OID\n    │\n    ▼\n GETNEXT\n    │\n    ▼\nreturned OID ───┐\n                │\n                ▼\n             GETNEXT\n                │\n                ▼\n          returned OID ───┐\n                          │\n                         ...\nThe OID returned by one request becomes the starting OID for the next request.\nThe process continues until the returned OID no longer belongs to the subtree being explored.\n\n7.2.1 Experiment — Implement your own walk\nCreate:\nmy_walk.py\nYour program must receive a starting OID and use repeated GETNEXT operations to display every object below that OID.\nTest it using the MIB-II system subtree:\n1.3.6.1.2.1.1\nThe output should contain lines similar to:\n1.3.6.1.2.1.1.1.0   OctetString       ...\n1.3.6.1.2.1.1.2.0   ObjectIdentifier  ...\n1.3.6.1.2.1.1.3.0   TimeTicks         ...\n...\nYour program must stop automatically when the returned OID is no longer below:\n1.3.6.1.2.1.1\n\n\n\n\n\n\nWarning\n\n\n\nDo not simply perform a fixed number of GETNEXT operations.\nA network management application cannot assume how many objects an agent implements below a subtree. Your program must determine when it has left the requested subtree.\n\n\n\nSuppose your program starts at:\n1.3.6.1.2.1.1\nand eventually receives:\n1.3.6.1.2.1.2....\nWhy should the walk stop even though the agent has successfully returned another object?"
+  },
+  {
+    "objectID": "L1.SNMP.html#comparing-with-snmpwalk",
+    "href": "L1.SNMP.html#comparing-with-snmpwalk",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "7.3 Comparing with snmpwalk",
+    "text": "7.3 Comparing with snmpwalk\nNow execute:\nsnmpwalk -v2c -c public &lt;MIKROTIK_IP&gt; 1.3.6.1.2.1.1\nCompare its output with your Python program.\nBoth should traverse essentially the same part of the MIB.\n\n\n\n\n\n\nNote\n\n\n\nsnmpwalk is a convenient manager-side operation. It should not be confused with an SNMP protocol PDU.\nUnderstanding this distinction is important:\nSNMP protocol operation          Manager-side operation\n\nGET                              GET\nGETNEXT       ────────────────►  WALK\nGETBULK\nSET\nRESPONSE\n..."
+  },
+  {
+    "objectID": "L1.SNMP.html#the-interface-table",
+    "href": "L1.SNMP.html#the-interface-table",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "8.1 The Interface Table",
+    "text": "8.1 The Interface Table\nMIB-II provides information about the network interfaces of a device below the interfaces subtree:\n1.3.6.1.2.1.2\nExplore it:\nsnmpwalk -v2c -c public &lt;MIKROTIK_IP&gt; 1.3.6.1.2.1.2\nThe interface table contains information such as:\n\n\n\nObject\nMeaning\n\n\n\n\nifIndex\nInterface identifier\n\n\nifDescr\nInterface description\n\n\nifType\nInterface type\n\n\nifMtu\nMaximum transmission unit\n\n\nifSpeed\nEstimated interface bandwidth\n\n\nifPhysAddress\nPhysical address\n\n\nifAdminStatus\nDesired interface state\n\n\nifOperStatus\nCurrent operational state\n\n\nifInOctets\nReceived octets\n\n\nifOutOctets\nTransmitted octets\n\n\n\nUnlike scalar objects, table objects have an index identifying the row.\nFor example:\nifDescr.1 = \"ether1\"\nifDescr.2 = \"ether2\"\nifDescr.3 = \"ether3\"\ncan be understood as:\n             ifIndex\n\n               1        2        3\n               │        │        │\n               ▼        ▼        ▼\n\nifDescr      ether1   ether2   ether3\nifType       ...      ...      ...\nifSpeed      ...      ...      ...\nifOperStatus ...      ...      ...\nifInOctets   ...      ...      ...\nifOutOctets  ...      ...      ...\nThe index therefore connects values belonging to the same interface."
+  },
+  {
+    "objectID": "L1.SNMP.html#building-an-interface-inventory",
+    "href": "L1.SNMP.html#building-an-interface-inventory",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "8.2 Building an Interface Inventory",
+    "text": "8.2 Building an Interface Inventory\nCreate:\ninterfaces.py\nUse SNMP to discover the interfaces available on your MikroTik.\nFor each interface, display at least:\nINDEX   NAME       TYPE       ADMIN       OPER\n1       ether1     ...        up          up\n2       ether2     ...        up          up\n3       ether3     ...        down        down\n...\nDo not assume that the MikroTik has a fixed number of interfaces or that their indexes are consecutive.\nYour program should obtain this information dynamically from SNMP.\n\nConsider the following two objects:\nifDescr.4\nifOperStatus.4\nWhat does the .4 represent?\nHow does this differ from the .0 used in:\nsysName.0"
+  },
+  {
+    "objectID": "L1.SNMP.html#from-inventory-to-telemetry",
+    "href": "L1.SNMP.html#from-inventory-to-telemetry",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "8.3 From Inventory to Telemetry",
+    "text": "8.3 From Inventory to Telemetry\nNow inspect the values of:\nifInOctets\nifOutOctets\nfor one of the active interfaces.\nGenerate some network traffic and retrieve the values again.\n\nDo ifInOctets and ifOutOctets represent:\n\nthe current traffic rate,\nthe number of bytes transferred during the last second, or\ncumulative counters?\n\nWhat happens to their values while traffic crosses the interface?\nCould you calculate a traffic rate if you obtained the same counter at two different times?\n\nThis observation will be the starting point for the next section, where we will turn SNMP counters into network telemetry."
+  },
+  {
+    "objectID": "L1.SNMP.html#from-a-counter-to-a-rate",
+    "href": "L1.SNMP.html#from-a-counter-to-a-rate",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "9.1 From a Counter to a Rate",
+    "text": "9.1 From a Counter to a Rate\nSuppose that the value of ifInOctets is measured at two different times:\n\n\n\nTime\nCounter\n\n\n\n\n\\(t_1\\)\n\\(C_1\\)\n\n\n\\(t_2\\)\n\\(C_2\\)\n\n\n\nThe average incoming traffic rate during that interval is:\n\\[\nR_{\\text{in}} =\n8 \\frac{C_2-C_1}{t_2-t_1}\n\\]\nwhere:\n\n\\(C_1\\) and \\(C_2\\) are counter values in octets;\n\\(t_1\\) and \\(t_2\\) are measured in seconds;\nthe factor 8 converts octets into bits;\n\\(R_{\\text{in}}\\) is expressed in bit/s.\n\nThe same calculation can be applied to ifOutOctets.\n\n\n\n\n\n\nImportant\n\n\n\nSNMP does not calculate the traffic rate for us.\nThe agent exposes a counter. The manager samples that counter and derives the rate.\nThis distinction between a raw measurement and a derived metric is fundamental in network monitoring and observability."
+  },
+  {
+    "objectID": "L1.SNMP.html#measuring-the-traffic-rate-of-an-interface",
+    "href": "L1.SNMP.html#measuring-the-traffic-rate-of-an-interface",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "9.2 Measuring the Traffic Rate of an Interface",
+    "text": "9.2 Measuring the Traffic Rate of an Interface\nCreate:\ninterface_rate.py\nYour program must:\n\nobtain the available interfaces from the MikroTik;\ndisplay them to the user;\nallow the user to select one interface;\nretrieve its input and output octet counters;\nwait for a configurable sampling interval;\nretrieve the counters again;\ncalculate the input and output traffic rates;\ndisplay the results in bit/s.\n\nA possible execution could look like:\nAvailable interfaces:\n\n[1] ether1\n[2] ether2\n[3] ether3\n\nSelect interface: 1\nSampling interval [s]: 5\n\nInterface: ether1\nRX:  2.43 Mbit/s\nTX:  817.32 kbit/s\n\nIf the sampling interval is 5 seconds, does the calculated value represent the instantaneous traffic rate at the moment of the second measurement?\nWhat does it actually represent?"
+  },
+  {
+    "objectID": "L1.SNMP.html#sampling-interval",
+    "href": "L1.SNMP.html#sampling-interval",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "9.3 Sampling Interval",
+    "text": "9.3 Sampling Interval\nThe sampling interval determines how often the monitoring system retrieves the counters.\nConsider two extreme cases:\nShort sampling interval\n\nC1 ── C2 ── C3 ── C4 ── C5 ── C6\n│     │     │     │     │     │\n└─1s──┴─1s──┴─1s──┴─1s──┴─1s──┘\n\nMore detail\nMore SNMP requests\n\n\nLong sampling interval\n\nC1 ─────────────────── C2\n│                      │\n└──────── 60 s ────────┘\n\nLess detail\nFewer SNMP requests\n\nCompare sampling intervals of:\n1 s\n10 s\n60 s\n5 min\nWhat are the advantages and disadvantages of each?\nWould you use the same sampling interval to monitor 5 interfaces and 50,000 interfaces?"
+  },
+  {
+    "objectID": "L1.SNMP.html#continuous-monitoring",
+    "href": "L1.SNMP.html#continuous-monitoring",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "9.4 Continuous Monitoring",
+    "text": "9.4 Continuous Monitoring\nModify interface_rate.py so that it continuously monitors the selected interface.\nAfter the first measurement, you do not need to retrieve two completely new samples for every rate calculation.\nInstead:\nC1        C2        C3        C4        C5\n│         │         │         │         │\n└── Δ1 ───┘         │         │         │\n          └── Δ2 ───┘         │         │\n                    └── Δ3 ───┘         │\n                              └── Δ4 ───┘\nEach new counter value becomes the previous value for the next calculation.\nDisplay one measurement per sampling interval:\nTIME       RX              TX\n14:32:05   1.24 Mbit/s     340.1 kbit/s\n14:32:10   2.81 Mbit/s     512.4 kbit/s\n14:32:15   950.2 kbit/s    1.13 Mbit/s\n...\nStop the monitor using Ctrl+C."
+  },
+  {
+    "objectID": "L1.SNMP.html#counter-size-matters",
+    "href": "L1.SNMP.html#counter-size-matters",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "9.5 Counter Size Matters",
+    "text": "9.5 Counter Size Matters\nThe original MIB-II interface table defines:\nifInOctets\nifOutOctets\nas 32-bit counters.\nA 32-bit unsigned counter can represent values from:\n\\[\n0\n\\quad\\text{to}\\quad\n2^{32}-1\n\\]\nAfter reaching its maximum value, the counter wraps around.\nConsider a continuously busy 1 Gbit/s interface.\n\nCalculate approximately how long it would take a 32-bit octet counter to wrap around at 1 Gbit/s.\nIs this a problem if the monitoring system samples the interface every 5 minutes?\n\nFor higher-capacity interfaces, IF-MIB provides 64-bit counters:\nifHCInOctets\nifHCOutOctets\nwhere HC stands for High Capacity.\nWhenever they are available, these counters are generally preferable for traffic monitoring.\n\n\n\n\n\n\nNote\n\n\n\nA robust monitoring application should not simply assume that:\nnew_counter &gt;= old_counter\nA counter may become smaller because of:\n\ncounter wraparound;\ndevice or interface restart;\nagent restart.\n\nProduction monitoring systems must account for these situations."
+  },
+  {
+    "objectID": "L1.SNMP.html#using-high-capacity-counters",
+    "href": "L1.SNMP.html#using-high-capacity-counters",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "9.6 Using High-Capacity Counters",
+    "text": "9.6 Using High-Capacity Counters\nCheck whether your MikroTik exposes:\nifHCInOctets\nifHCOutOctets\nfor the selected interface.\nModify your monitor to use the 64-bit counters when they are available.\n\nWhat ASN.1/SNMP data type is returned for ifInOctets?\nWhat type is returned for ifHCInOctets?\nHow many bits does each counter use?"
+  },
+  {
+    "objectID": "L1.SNMP.html#interface-utilization",
+    "href": "L1.SNMP.html#interface-utilization",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "9.7 Interface Utilization",
+    "text": "9.7 Interface Utilization\nA traffic rate becomes easier to interpret when it is compared with the capacity of the interface.\nIf the nominal interface speed is \\(S\\), the utilization can be calculated as:\n\\[\nU_{\\text{in}} =\n100\\frac{R_{\\text{in}}}{S}\n\\]\nand:\n\\[\nU_{\\text{out}} =\n100\\frac{R_{\\text{out}}}{S}\n\\]\nRetrieve the appropriate interface speed information through SNMP and extend your program to display utilization.\nFor example:\nTIME       RX             RX UTIL.    TX             TX UTIL.\n14:32:05   1.24 Mbit/s      1.24%    340.1 kbit/s      0.34%\n14:32:10   2.81 Mbit/s      2.81%    512.4 kbit/s      0.51%\n14:32:15   950.2 kbit/s     0.95%    1.13 Mbit/s       1.13%\n\nDoes the nominal speed reported by an interface necessarily represent the amount of bandwidth actually available to an application?\nWhy is interface utilization nevertheless a useful management metric?"
+  },
+  {
+    "objectID": "L1.SNMP.html#concurrent-polling-with-asyncio",
+    "href": "L1.SNMP.html#concurrent-polling-with-asyncio",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "10.1 Concurrent Polling with asyncio",
+    "text": "10.1 Concurrent Polling with asyncio\nModify your program so that it can monitor several interfaces concurrently.\nUse the asynchronous concepts introduced in the Python class:\nawait asyncio.gather(\n    poll_interface(...),\n    poll_interface(...),\n    poll_interface(...),\n)\nConceptually:\nSequential\n\nA: request ───── response\n                      B: request ───── response\n                                            C: request ───── response\n\n\nConcurrent\n\nA: request ───────────────── response\nB: request ─────────── response\nC: request ───────────────────── response\nThe program can use the time spent waiting for one network response to process or wait for others.\n\nDoes asyncio make the MikroTik answer an individual SNMP request faster?\nIf not, why can it significantly reduce the total time required to poll many independent objects or devices?"
+  },
+  {
+    "objectID": "L1.SNMP.html#final-monitor",
+    "href": "L1.SNMP.html#final-monitor",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "10.2 Final Monitor",
+    "text": "10.2 Final Monitor\nYour final program for this section should allow the user to select one or more interfaces and continuously display:\n\ninterface name;\noperational status;\ninput traffic rate;\noutput traffic rate;\ninput utilization;\noutput utilization.\n\nUse high-capacity counters when available.\nThe program should update the measurements periodically without requiring user interaction.\nAt this point, you have built the fundamental data collection loop used by a network monitoring system:\n       POLL\n        │\n        ▼\n┌─────────────────┐\n│ Read counters   │\n└────────┬────────┘\n         │\n         ▼\n┌─────────────────┐\n│ Calculate rates │\n└────────┬────────┘\n         │\n         ▼\n┌─────────────────┐\n│ Interpret data  │\n└────────┬────────┘\n         │\n         ▼\n       WAIT\n         │\n         └──────────────► POLL AGAIN\nIn later labs, the same general idea will be extended from individual SNMP measurements to a complete telemetry and observability platform."
+  },
+  {
+    "objectID": "L1.SNMP.html#discovering-hosts-on-a-local-network",
+    "href": "L1.SNMP.html#discovering-hosts-on-a-local-network",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "11.1 Discovering Hosts on a Local Network",
+    "text": "11.1 Discovering Hosts on a Local Network\nIf the manager is directly connected to an IPv4 LAN, ARP provides a useful mechanism for discovering active hosts.\nThe manager can send an ARP request asking:\nWho has 192.168.153.1?\nWho has 192.168.153.2?\nWho has 192.168.153.3?\n...\nA device using one of those addresses can reply with its MAC address:\nManager                                  Device\n\n   │                                       │\n   │── ARP: Who has 192.168.153.10? ─────&gt;│\n   │                                       │\n   │&lt;── ARP: 192.168.153.10 is at MAC ────│\n   │                                       │\nThis provides two useful pieces of inventory information:\nIP address  ↔  MAC address\n\n\n\n\n\n\nNote\n\n\n\nARP discovery only works for devices in the same Layer-2 broadcast domain.\nRouters do not normally forward ARP requests. Therefore, a management platform cannot use ARP alone to discover arbitrary remote networks."
+  },
+  {
+    "objectID": "L1.SNMP.html#arp-discovery-with-scapy",
+    "href": "L1.SNMP.html#arp-discovery-with-scapy",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "11.2 ARP Discovery with Scapy",
+    "text": "11.2 ARP Discovery with Scapy\nFor this experiment, we will use Scapy, a Python library for creating, sending, receiving, and inspecting network packets.\nWe will only use a very small part of Scapy. The objective of this lab is not to learn the complete library, but to use it to implement the discovery mechanism discussed above.\nInstall Scapy inside your virtual environment:\npip install scapy\n\n11.2.1 Building Packets with Scapy\nScapy represents network protocols as Python objects.\nFor example:\nfrom scapy.all import ARP\n\npacket = ARP(\n    pdst=\"192.168.153.10\"\n)\ncreates an ARP packet asking about the IPv4 address 192.168.153.10.\nYou can inspect the packet using:\npacket.show()\nTry it.\n\nFind the following fields in the output:\n\noperation (op);\ntarget protocol address (pdst);\nsender protocol address (psrc);\ntarget hardware address (hwdst).\n\nWhat values has Scapy automatically selected for the fields that you did not specify?\n\n\n\n11.2.2 Ethernet and ARP\nARP requests are transmitted inside Ethernet frames.\nAn ARP request intended for all hosts on the LAN therefore uses the Ethernet broadcast address:\nff:ff:ff:ff:ff:ff\nIn Scapy, an Ethernet frame can be created with:\nfrom scapy.all import Ether\n\nethernet = Ether(dst=\"ff:ff:ff:ff:ff:ff\")\nScapy uses the / operator to encapsulate one protocol inside another:\npacket = ethernet / ARP(pdst=\"192.168.153.10\")\nThis represents:\n┌─────────────────────────────┐\n│ Ethernet                    │\n│ dst = ff:ff:ff:ff:ff:ff     │\n│                             │\n│   ┌─────────────────────┐   │\n│   │ ARP                 │   │\n│   │                     │   │\n│   │ Who has             │   │\n│   │ 192.168.153.10?     │   │\n│   └─────────────────────┘   │\n└─────────────────────────────┘\nInspect the complete packet:\npacket.show()\nNotice that / does not mean division in this context. Scapy overloads the operator to construct a protocol stack.\n\n\n11.2.3 Sending and Receiving Packets\nScapy provides several functions for sending packets.\nBecause we are working directly with Ethernet frames, we will use srp():\nfrom scapy.all import srp\n\nanswered, unanswered = srp(\n    packet,\n    timeout=2,\n    verbose=False\n)\nsrp() means approximately:\nsend and receive packets at Layer 2\nand returns two collections:\nanswered\nunanswered\nEach item in answered contains both:\npacket sent  →  packet received\nFor an ARP response, the received packet provides the information we need:\nfor sent, received in answered:\n    print(received.psrc)\n    print(received.hwsrc)\nwhere:\npsrc   → source protocol address → IPv4 address\nhwsrc  → source hardware address → MAC address\n\n\n\n\n\n\nScapy and asyncio\n\n\n\nThe srp() function used here is a blocking operation.\nCalling it from an async function does not automatically make it asynchronous:\nasync def discover():\n    answered, unanswered = srp(...)\nWhile srp() is running, the Python asyncio event loop cannot execute other tasks.\nFor this exercise, this is not a problem. Scapy sends the ARP probes and collects their responses as a single discovery operation:\n                    ARP discovery\n                         │\n       ┌─────────────────┼─────────────────┐\n       ▼                 ▼                 ▼\n     host 1            host 2            host 3\n       │                 │                 │\n       └─────────────────┼─────────────────┘\n                         ▼\n                    ARP responses\nWe will therefore perform ARP discovery with Scapy first and then use asyncio for the SNMP queries:\n        Scapy ARP discovery\n               │\n               ▼\n       discovered hosts\n               │\n       ┌───────┼───────┐\n       ▼       ▼       ▼\n     host 1  host 2  host 3\n       │       │       │\n       └── concurrent ─┘\n          SNMP queries\n           (asyncio)\nThis also illustrates an important Python concept:\n\nasyncio provides concurrency only when the operations being called are asynchronous and yield control while they are waiting.\n\n\n\n\n\n11.2.4 Discovering a Complete Subnet\nScapy also accepts a network in CIDR notation as the destination of an ARP request.\nFor example:\nARP(pdst=\"192.168.153.0/24\")\nrepresents ARP requests for the addresses in that subnet.\nTherefore, the basic discovery operation can be constructed as:\nfrom scapy.all import ARP, Ether, srp\n\nnetwork = \"192.168.153.0/24\"\n\npacket = (\n    Ether(dst=\"ff:ff:ff:ff:ff:ff\")\n    / ARP(pdst=network)\n)\n\nanswered, unanswered = srp(\n    packet,\n    timeout=2,\n    verbose=False\n)\n\nBefore continuing, make sure you can explain each part of:\nEther(dst=\"ff:ff:ff:ff:ff:ff\") / ARP(pdst=network)\nIn particular:\n\nWhy is the Ethernet destination address a broadcast address?\nWhy can the ARP destination contain a /24 network rather than a single address?\nWhat does / mean in Scapy?\nWhy are we using srp() rather than simply sending the packets?\n\n\n\n\n11.2.5 Exercise — Build the Host Inventory\nCreate:\ndiscover.py\nUsing the previous example as a starting point, process the responses and produce a table containing the discovered IP and MAC addresses:\nIP ADDRESS          MAC ADDRESS\n192.168.153.1       48:a9:8a:...\n192.168.153.4       02:42:ac:...\n192.168.153.17      bc:24:11:...\n...\nDo not copy the example blindly. You should understand how the Ethernet frame, the ARP request, srp(), and the returned responses work before constructing the inventory."
+  },
+  {
+    "objectID": "L1.SNMP.html#arp-is-not-the-only-discovery-mechanism",
+    "href": "L1.SNMP.html#arp-is-not-the-only-discovery-mechanism",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "11.3 ARP Is Not the Only Discovery Mechanism",
+    "text": "11.3 ARP Is Not the Only Discovery Mechanism\nNetwork discovery does not rely on a single universal mechanism.\nDepending on the network and the information available, management systems may combine different sources such as:\nARP / neighbour tables\nICMP probes\nSNMP\nLLDP/CDP\nrouting information\nDHCP information\nDNS\ntraffic observation\n...\nFor example, ICMP Echo Requests can also be used to probe IP addresses:\nManager                           Device\n\n   │── ICMP Echo Request ────────&gt;│\n   │&lt;── ICMP Echo Reply ──────────│\nHowever:\n\n\n\n\n\n\nWarning\n\n\n\nNo response to an ICMP Echo Request does not necessarily mean that no device exists at that address.\nICMP may be filtered while other protocols, including SNMP, remain reachable.\n\n\nFor this lab, ARP will be used for initial discovery because the devices being discovered are on the local laboratory network."
+  },
+  {
+    "objectID": "L1.SNMP.html#from-a-host-to-a-managed-device",
+    "href": "L1.SNMP.html#from-a-host-to-a-managed-device",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "11.4 From a Host to a Managed Device",
+    "text": "11.4 From a Host to a Managed Device\nFinding an IP address does not tell us whether the device can be managed using SNMP.\nFor every host discovered using ARP, send an SNMPv2c GET request for:\nsysName.0\nusing the community:\npublic\nIf the device provides a valid SNMP response, classify it as an SNMP-enabled device.\nYour inventory should now distinguish:\nIP ADDRESS          MAC ADDRESS          SNMP\n192.168.153.1       48:a9:8a:...         yes\n192.168.153.4       02:42:ac:...         no\n192.168.153.17      bc:24:11:...         yes\n\nA host was discovered using ARP but does not answer the SNMP request.\nCan you conclude that the device does not support SNMP?\nWhat other explanations are possible?"
+  },
+  {
+    "objectID": "L1.SNMP.html#identifying-snmp-devices",
+    "href": "L1.SNMP.html#identifying-snmp-devices",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "11.5 Identifying SNMP Devices",
+    "text": "11.5 Identifying SNMP Devices\nFor each device that responds to SNMP, retrieve:\nsysName.0\nsysDescr.0\nsysObjectID.0\nExtend the inventory:\n192.168.153.1\n    MAC:          48:a9:8a:...\n    SNMP:         yes\n    Name:         router01\n    Description:  RouterOS ...\n    Object ID:    1.3.6.1.4.1....\n\n192.168.153.4\n    MAC:          02:42:ac:...\n    SNMP:         no\nThe three SNMP objects provide different information:\n\nsysName provides the configured name of the device;\nsysDescr provides a textual description of the system;\nsysObjectID identifies the type of device according to the vendor’s object hierarchy.\n\n\nWhich of these objects would be the most appropriate for software that needs to automatically determine what type of device it has discovered?\nWhy is parsing sysDescr text generally less robust?"
+  },
+  {
+    "objectID": "L1.SNMP.html#enterprise-oids",
+    "href": "L1.SNMP.html#enterprise-oids",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "11.6 Enterprise OIDs",
+    "text": "11.6 Enterprise OIDs\nInspect the sysObjectID returned by your MikroTik.\nVendor-specific objects are located below:\n1.3.6.1.4.1\nThis part of the OID tree is known as:\nprivate.enterprises\nEach registered organization receives an enterprise number.\nConceptually:\n1.3.6.1.4.1\n      │\n      └── enterprises\n             │\n             ├── vendor A\n             ├── vendor B\n             ├── vendor C\n             │      │\n             │      └── products...\n             └── ...\nIdentify the enterprise number contained in the sysObjectID returned by your MikroTik.\n\n\n\n\n\n\nNote\n\n\n\nThis is one of the mechanisms that a network management platform can use after discovery to decide which vendor-specific MIBs, monitoring templates, or collection rules should be applied to a device."
+  },
+  {
+    "objectID": "L1.SNMP.html#why-sequential-discovery-does-not-scale",
+    "href": "L1.SNMP.html#why-sequential-discovery-does-not-scale",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "11.7 Why Sequential Discovery Does Not Scale",
+    "text": "11.7 Why Sequential Discovery Does Not Scale\nSuppose several devices have been discovered:\n192.168.153.1\n192.168.153.2\n192.168.153.3\n...\nA sequential SNMP probe behaves approximately as:\nDevice 1: request ───── wait ───── response\n                                     │\nDevice 2:                            request ───── wait ───── response\n                                                                  │\nDevice 3:                                                         ...\nThis becomes particularly inefficient when a device does not respond.\nThe manager must wait for the SNMP timeout before moving to the next device.\n\nAssume an SNMP timeout of 1 second.\nApproximately how long could a sequential scan of 100 addresses take if none of them responds?\nWhat happens if those requests can be performed concurrently?"
+  },
+  {
+    "objectID": "L1.SNMP.html#concurrent-snmp-discovery",
+    "href": "L1.SNMP.html#concurrent-snmp-discovery",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "11.8 Concurrent SNMP Discovery",
+    "text": "11.8 Concurrent SNMP Discovery\nModify the SNMP phase of discover.py to probe discovered hosts concurrently using asyncio.\nConceptually:\nresults = await asyncio.gather(\n    probe_snmp(\"192.168.153.1\"),\n    probe_snmp(\"192.168.153.2\"),\n    probe_snmp(\"192.168.153.3\"),\n    # ...\n)\nThe discovery process now becomes:\nARP discovery\n     │\n     ▼\n┌───────────────────────────────────┐\n│  IP1   IP2   IP3   IP4   IP5 ... │\n└───┬─────┬─────┬─────┬─────┬─────┘\n    │     │     │     │     │\n    └─────┴── concurrent SNMP ──────┘\n                  │\n                  ▼\n           SNMP responders\n                  │\n                  ▼\n          Device information\nMeasure the time required for:\n\nsequential SNMP probing;\nconcurrent SNMP probing.\n\nCompare the results.\n\nWhy is concurrency particularly valuable when some devices do not respond?\nDoes concurrent discovery generate less network traffic than sequential discovery?\nWhat resource or network problems could arise if a management platform started tens of thousands of discovery requests simultaneously?"
+  },
+  {
+    "objectID": "L1.SNMP.html#building-the-device-inventory",
+    "href": "L1.SNMP.html#building-the-device-inventory",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "11.9 Building the Device Inventory",
+    "text": "11.9 Building the Device Inventory\nYour final discover.py program should automatically:\n\ndiscover active devices on the local network;\nobtain their IP and MAC addresses;\ndetermine which devices respond to SNMP;\nretrieve sysName, sysDescr, and sysObjectID from SNMP-enabled devices;\ndisplay the resulting inventory.\n\nA possible result is:\nNetwork discovery: 192.168.153.0/24\n\nDiscovered: 6 devices\nSNMP-enabled: 2 devices\n\nIP ADDRESS       MAC ADDRESS        SNMP   NAME        DESCRIPTION\n192.168.153.1    48:a9:8a:...       yes    router01    RouterOS ...\n192.168.153.4    02:42:ac:...       no     -           -\n192.168.153.8    bc:24:11:...       yes    switch01    ...\n...\nYou have now implemented a simplified version of an important function provided by many network management platforms:\nDISCOVERY\n    ↓\nIDENTIFICATION\n    ↓\nINVENTORY\n    ↓\nMONITORING\nThe next step after discovering and identifying a device would be to determine what should be monitored on that device."
+  },
+  {
+    "objectID": "L1.SNMP.html#read-and-write-access",
+    "href": "L1.SNMP.html#read-and-write-access",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "12.1 Read and Write Access",
+    "text": "12.1 Read and Write Access\nFor the previous exercises, the MikroTik SNMP agent was configured with a read-only community:\npublic\nThis is sufficient for monitoring, but it should not allow configuration changes.\nTry to modify sysLocation.0 using the read-only community.\nFor example, with the Net-SNMP command-line tools:\nsnmpset -v2c -c public &lt;MIKROTIK_IP&gt; \\\n  1.3.6.1.2.1.1.6.0 s \"Network Management Lab\"\nHere:\n1.3.6.1.2.1.1.6.0    → sysLocation.0\ns                      → OCTET STRING\n\"Network Management Lab\" → new value\nObserve the result.\n\nWas the operation accepted?\nWhy should a community used by a monitoring system normally have read-only access?"
+  },
+  {
+    "objectID": "L1.SNMP.html#enabling-write-access",
+    "href": "L1.SNMP.html#enabling-write-access",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "12.2 Enabling Write Access",
+    "text": "12.2 Enabling Write Access\nConfigure a separate SNMP community on the MikroTik with write access.\nDo not modify the read-only public community.\nUse the write community only for this part of the lab.\n\n\n\n\n\n\nWarning\n\n\n\nA read-write SNMP community provides the ability to modify writable managed objects on the device.\nIt should therefore not be used for routine monitoring.\n\n\nRepeat the SET operation using the write community.\nThen verify the result independently with a GET:\nsnmpget -v2c -c public &lt;MIKROTIK_IP&gt; \\\n  1.3.6.1.2.1.1.6.0\nThe complete operation is therefore:\n       write community                 read community\n\nManager ─────── SET ───────► Agent ◄────── GET ─────── Manager\n              │                │\n              │                ▼\n              │          sysLocation.0\n              │                │\n              └── changes ─────┘\n\nWhy is it useful to verify the result using a separate GET rather than assuming that the configuration has changed because a SET request was sent?"
+  },
+  {
+    "objectID": "L1.SNMP.html#performing-a-set-with-pysnmp",
+    "href": "L1.SNMP.html#performing-a-set-with-pysnmp",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "12.3 Performing a SET with PySNMP",
+    "text": "12.3 Performing a SET with PySNMP\nCreate:\nset_location.py\nThe program must receive a new location as an argument:\npython set_location.py \"Lab 1 - EINA\"\nand modify:\nsysLocation.0\nusing SNMP.\nAfter performing the SET, retrieve the object again and display its new value.\nYour program should produce output similar to:\nPrevious location: ...\nSetting location...\nNew location: Lab 1 - EINA\n\nCompare GET and SET in your Python programs.\nWhich elements are common to both operations?\nWhat changes?"
+  },
+  {
+    "objectID": "L1.SNMP.html#inspecting-an-snmp-set",
+    "href": "L1.SNMP.html#inspecting-an-snmp-set",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "12.4 Inspecting an SNMP SET",
+    "text": "12.4 Inspecting an SNMP SET\nCapture one successful SET operation.\nIdentify:\n\nthe SNMP version;\nthe community;\nthe PDU type;\nthe OID being modified;\nthe new value;\nthe agent response.\n\nPay particular attention to the community string.\n\n\n\n\n\n\nA Security Problem\n\n\n\nIn SNMPv1 and SNMPv2c, the community string is transmitted without encryption.\nAnyone able to capture the traffic may be able to obtain the community used for the SET operation.\nA captured read-write community is particularly dangerous because it may allow an attacker to modify the device configuration.\n\n\n\nCompare the packet capture of your earlier SNMP GET using public with this SET operation.\nCan you identify both community strings in the captured packets?\nWould you consider SNMPv2c appropriate for management traffic crossing an untrusted network?"
+  },
+  {
+    "objectID": "L1.SNMP.html#monitoring-vs-configuration",
+    "href": "L1.SNMP.html#monitoring-vs-configuration",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "12.5 Monitoring vs Configuration",
+    "text": "12.5 Monitoring vs Configuration\nSNMP can therefore be used for both:\n                  SNMP\n                   │\n          ┌────────┴────────┐\n          ▼                 ▼\n        READ              WRITE\n          │                 │\n   GET / GETNEXT           SET\n   GETBULK / WALK           │\n          │                 ▼\n          ▼             Configuration\n      Monitoring\n      Telemetry\nIn this course, our main use of SNMP will be monitoring and telemetry.\nModern network automation frequently uses other mechanisms for configuration, while SNMP remains widely used for retrieving operational state and metrics.\nNevertheless, understanding SET is important because it demonstrates that the SNMP management model was designed for both monitoring and control."
+  },
+  {
+    "objectID": "L1.SNMP.html#the-problem-with-community-based-snmp",
+    "href": "L1.SNMP.html#the-problem-with-community-based-snmp",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "13.1 The Problem with Community-Based SNMP",
+    "text": "13.1 The Problem with Community-Based SNMP\nSNMPv1 and SNMPv2c use a community string as a simple access-control mechanism.\nConceptually:\n             \"public\"\nManager ─────────────────► Agent\n             GET\n\n          \"write-community\"\nManager ─────────────────► Agent\n             SET\nThe community identifies the access rights associated with the request.\nHowever, the community itself is transmitted without encryption.\nAs you observed in the packet capture:\nNetwork observer\n       │\n       ▼\n┌──────────────────────────┐\n│ SNMPv2c packet           │\n│                          │\n│ Community: public        │\n│ PDU: GET                 │\n│ OID: ...                 │\n└──────────────────────────┘\nand, even more critically:\n┌──────────────────────────┐\n│ SNMPv2c packet           │\n│                          │\n│ Community: ********      │\n│ PDU: SET                 │\n│ OID: sysLocation.0       │\n│ Value: ...               │\n└──────────────────────────┘\n\nWhat could an attacker do after capturing a valid read-write community?\nWould choosing a very long and random community string solve the packet-capture problem? Why?"
+  },
+  {
+    "objectID": "L1.SNMP.html#configuring-an-snmpv3-user",
+    "href": "L1.SNMP.html#configuring-an-snmpv3-user",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "14.1 Configuring an SNMPv3 User",
+    "text": "14.1 Configuring an SNMPv3 User\nConfigure an SNMPv3 user on your MikroTik for this experiment.\nUse:\nSecurity level: authPriv\nand the authentication and privacy credentials assigned for your laboratory environment.\n\n\n\n\n\n\nWarning\n\n\n\nDo not reuse personal passwords.\nThe credentials used in this exercise are laboratory credentials and should only be used inside the CyberRange.\n\n\nYour configuration requires several pieces of information:\nSNMPv3 user\n    │\n    ├── username\n    │\n    ├── authentication protocol\n    │       └── authentication password\n    │\n    └── privacy protocol\n            └── privacy password\nVerify that SNMPv3 access is enabled before continuing."
+  },
+  {
+    "objectID": "L1.SNMP.html#your-first-snmpv3-get",
+    "href": "L1.SNMP.html#your-first-snmpv3-get",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "14.2 Your First SNMPv3 GET",
+    "text": "14.2 Your First SNMPv3 GET\nUse the Net-SNMP command-line tools to retrieve:\nsysUpTime.0\nusing SNMPv3 with authentication and privacy.\nThe command has the following general structure:\nsnmpget -v3 \\\n  -l authPriv \\\n  -u &lt;USERNAME&gt; \\\n  -a &lt;AUTH_PROTOCOL&gt; \\\n  -A '&lt;AUTH_PASSWORD&gt;' \\\n  -x &lt;PRIV_PROTOCOL&gt; \\\n  -X '&lt;PRIV_PASSWORD&gt;' \\\n  &lt;MIKROTIK_IP&gt; \\\n  1.3.6.1.2.1.1.3.0\nwhere:\n-v3   SNMP version 3\n-l    security level\n-u    username\n-a    authentication protocol\n-A    authentication password\n-x    privacy protocol\n-X    privacy password\n\nCompare this command with the SNMPv2c equivalent:\nsnmpget -v2c -c public &lt;MIKROTIK_IP&gt; 1.3.6.1.2.1.1.3.0\nWhat information has replaced the community string?"
+  },
+  {
+    "objectID": "L1.SNMP.html#inspecting-snmpv3-on-the-network",
+    "href": "L1.SNMP.html#inspecting-snmpv3-on-the-network",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "14.3 Inspecting SNMPv3 on the Network",
+    "text": "14.3 Inspecting SNMPv3 on the Network\nCapture the SNMPv3 GET request and its response.\nCompare them with the SNMPv2c GET captured earlier.\nTry to identify:\n\nthe SNMP version;\nthe SNMPv3 username;\nthe authentication-related information;\nthe encrypted portion of the message.\n\nThen try to locate:\nsysUpTime.0\nand its returned value in the packet capture.\n\nCan you read the requested OID as easily as you could with SNMPv2c?\nCan you read the returned value?\nCan you find the authentication password in the packet?\nCan you find the privacy password?\nCan you find the SNMPv3 username?\n\n\n\n\n\n\n\nImportant\n\n\n\nEncryption does not mean that the complete network packet becomes invisible.\nAn observer can still see information required to transport and process the packet, such as IP addresses, UDP ports and some SNMPv3 metadata.\nWith authPriv, however, the protected SNMP scoped PDU is encrypted."
+  },
+  {
+    "objectID": "L1.SNMP.html#snmpv3-with-pysnmp",
+    "href": "L1.SNMP.html#snmpv3-with-pysnmp",
+    "title": "Lab 1 — SNMP and Python",
+    "section": "14.4 SNMPv3 with PySNMP",
+    "text": "14.4 SNMPv3 with PySNMP\nCreate:\nget_v3.py\nModify one of your previous GET programs so that it retrieves:\nsysUpTime.0\nusing SNMPv3 with authPriv.\nIn PySNMP, SNMPv3 user-based security is configured using UsmUserData instead of CommunityData.\nConceptually:\nCommunityData(...)\nbecomes:\nUsmUserData(\n    username,\n    authKey=...,\n    privKey=...,\n    authProtocol=...,\n    privProtocol=...\n)\nUse the authentication and privacy protocols configured on your MikroTik.\n\nLook at the rest of your previous PySNMP GET program.\nApart from the security configuration, how much of the SNMP operation has changed?\nWhat does this tell you about the separation between:\nwhat we want to retrieve\nand:\nhow the SNMP communication is secured"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Network Management — Labs",
+    "section": "",
+    "text": "Welcome to the lab materials for this course.\n\nLab 1: SNMP and Python"
+  }
+]
